@@ -1,0 +1,534 @@
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions, Modal, Image, ColorValue } from 'react-native';
+import { useState, useRef, useEffect } from 'react';
+import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Camera, RotateCcw, Image as ImageIcon, Zap, X, CircleCheck as CheckCircle, TriangleAlert as AlertTriangle } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { AIService, FoodAnalysis } from '@/services/aiService';
+import { useAuth } from '@/contexts/AuthContext';
+import { UserService } from '@/services/userService';
+import { Colors, GlobalStyles } from '../../theme';
+
+const { width, height } = Dimensions.get('window');
+
+export default function ScanScreen() {
+  const { user } = useAuth();
+  const [facing, setFacing] = useState<CameraType>('back');
+  const [permission, requestPermission] = useCameraPermissions();
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [scanResults, setScanResults] = useState<FoodAnalysis | null>(null);
+  const [streamingText, setStreamingText] = useState('');
+  const [userAllergens, setUserAllergens] = useState<string[]>([]);
+  const cameraRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (user?.uid) {
+      UserService.getUserData(user.uid).then(data => {
+        setUserAllergens(data?.allergens || []);
+      });
+    }
+  }, [user]);
+
+  if (!permission) {
+    return <View style={styles.container} />;
+  }
+
+  if (!permission.granted) {
+    return (
+      <View style={styles.permissionContainer}>
+        <Camera size={64} color="#10B981" />
+        <Text style={styles.permissionTitle}>Camera Access Required</Text>
+        <Text style={styles.permissionText}>
+          We need access to your camera to scan food items for allergens
+        </Text>
+        <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+          <Text style={styles.permissionButtonText}>Grant Permission</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const toggleCameraFacing = () => {
+    setFacing(current => (current === 'back' ? 'front' : 'back'));
+  };
+
+  const takePicture = async () => {
+    if (cameraRef.current) {
+      setIsAnalyzing(true);
+      try {
+        const photo = await cameraRef.current.takePictureAsync();
+        await analyzePicture(photo.uri);
+      } catch (error) {
+        Alert.alert('Error', 'Failed to take picture');
+        setIsAnalyzing(false);
+      }
+    }
+  };
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setIsAnalyzing(true);
+      await analyzePicture(result.assets[0].uri);
+    }
+  };
+
+  const analyzePicture = async (imageUri: string) => {
+    try {
+      setStreamingText('');
+      let userAllergensFetched: string[] = [];
+      if (user?.uid) {
+        const userData = await UserService.getUserData(user.uid);
+        userAllergensFetched = userData?.allergens || [];
+        setUserAllergens(userAllergensFetched);
+      }
+      
+      // Start streaming analysis for real-time feedback
+      AIService.streamAnalysis(imageUri, (chunk) => {
+        setStreamingText(prev => prev + chunk);
+      });
+
+      // Perform full analysis with user allergens
+      const analysis = await AIService.analyzeFoodImage(imageUri, userAllergensFetched);
+      if (!analysis.foodName) {
+        setScanResults(null);
+        setIsAnalyzing(false);
+        setShowResults(true);
+        return;
+      }
+      setScanResults(analysis);
+      
+      // Update user stats and save scan to history only if food was detected
+      if (user?.uid && analysis.foodName) {
+        await UserService.addScanResult(user.uid, analysis.allergens.hasAllergens);
+        await UserService.saveScanToHistory(user.uid, {
+          name: analysis.foodName,
+          brand: 'Unknown', // Could be extracted from image analysis
+          status: analysis.allergens.hasAllergens ? 'danger' : 'safe',
+          allergens: analysis.allergens.detectedAllergens,
+          scanDate: new Date().toISOString(),
+          confidence: Math.round(analysis.allergens.confidence * 100),
+        });
+      }
+      
+      setIsAnalyzing(false);
+      setShowResults(true);
+    } catch (error) {
+      console.error('Error analyzing image:', error);
+      Alert.alert('Analysis Error', 'Failed to analyze the image. Please try again.');
+      setScanResults(null);
+      setIsAnalyzing(false);
+      setShowResults(true);
+    }
+  };
+
+  const closeResults = () => {
+    setShowResults(false);
+    setScanResults(null);
+  };
+
+  return (
+    <View style={styles.container}>
+      <LinearGradient
+        colors={Colors.gradient as [ColorValue, ColorValue]}
+        style={{ paddingTop: 56, paddingBottom: 24, paddingHorizontal: 20, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, flexDirection: 'row', alignItems: 'center' }}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}>
+        <Image source={require('../../assets/images/icon.png')} style={{ width: 40, height: 40, marginRight: 12 }} />
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={{ fontSize: 22, fontWeight: '700', color: '#FFF' }} numberOfLines={1} ellipsizeMode="tail">Scan Food</Text>
+          <Text style={{ fontSize: 14, color: '#FFF', opacity: 0.9 }}>Point camera at food labels or items</Text>
+        </View>
+      </LinearGradient>
+
+      <View style={{ alignItems: 'center', marginTop: 16 }}>
+        <View style={{ width: width * 0.85, height: width * 0.85, borderRadius: 32, overflow: 'hidden', backgroundColor: Colors.background }}>
+          <CameraView
+            style={{ flex: 1 }}
+            facing={facing}
+            ref={cameraRef}
+          />
+          {/* Overlay absolutely positioned on top of CameraView */}
+          <View style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }} pointerEvents="none">
+            <View style={{ width: '80%', height: '60%', borderWidth: 3, borderColor: Colors.primary, borderRadius: 24, backgroundColor: 'transparent' }} />
+            <Text style={{ color: Colors.text, fontWeight: '700', fontSize: 15, marginTop: 16, backgroundColor: '#FFFFFFDD', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 4 }}>Position food item within the frame</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 24, marginBottom: 8 }}>
+        <TouchableOpacity style={[GlobalStyles.roundedButton, { backgroundColor: Colors.card, marginHorizontal: 12, padding: 12 }]} onPress={pickImage}>
+          <ImageIcon size={28} color={Colors.textSecondary} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[GlobalStyles.roundedButton, { backgroundColor: Colors.info, marginHorizontal: 12, elevation: 8, shadowColor: Colors.info, padding: 18 }]}
+          onPress={takePicture}
+          disabled={isAnalyzing}
+        >
+          <LinearGradient
+            colors={Colors.gradient as [ColorValue, ColorValue]}
+            style={{ borderRadius: 32, width: 64, height: 64, alignItems: 'center', justifyContent: 'center' }}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}>
+            <Camera size={36} color="#FFFFFF" />
+          </LinearGradient>
+        </TouchableOpacity>
+        <TouchableOpacity style={[GlobalStyles.roundedButton, { backgroundColor: Colors.card, marginHorizontal: 12, padding: 12 }]} onPress={toggleCameraFacing}>
+          <RotateCcw size={28} color={Colors.textSecondary} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Analyzing Modal */}
+      <Modal visible={isAnalyzing} transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.analyzingContainer}>
+            <LinearGradient
+              colors={Colors.gradientBlue as [ColorValue, ColorValue]}
+              style={[GlobalStyles.card, { alignItems: 'center', borderRadius: 24, padding: 32 }]}
+            >
+              <Zap size={48} color="#FFFFFF" />
+              <Text style={{ fontSize: 20, fontWeight: '700', color: '#FFF', marginTop: 12 }}>Analyzing Food...</Text>
+              <Text style={{ fontSize: 15, color: '#FFF', opacity: 0.9, marginBottom: 8 }}>Detecting ingredients and allergens</Text>
+              {streamingText && (
+                <View style={{ backgroundColor: '#FFFFFF22', borderRadius: 12, padding: 8, marginTop: 8 }}>
+                  <Text style={{ color: '#FFF', fontSize: 14 }}>{streamingText}</Text>
+                </View>
+              )}
+            </LinearGradient>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Results Modal */}
+      <Modal visible={showResults} transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[GlobalStyles.card, { borderRadius: 24, backgroundColor: Colors.card, alignItems: 'center', padding: 24, maxWidth: width * 0.9 }]}> 
+            <TouchableOpacity style={{ position: 'absolute', top: 12, right: 12, zIndex: 2 }} onPress={closeResults}>
+              <X size={28} color={Colors.textSecondary} />
+            </TouchableOpacity>
+            <View style={{ alignItems: 'center', marginBottom: 12 }}>
+              {!scanResults?.foodName ? (
+                <AlertTriangle size={48} color={Colors.warning} />
+              ) : scanResults.allergens.hasAllergens ? (
+                <AlertTriangle size={48} color={Colors.danger} />
+              ) : (
+                <CheckCircle size={48} color={Colors.safe} />
+              )}
+            </View>
+            <Text style={{ fontSize: 20, fontWeight: '700', color: Colors.text, marginBottom: 8 }}>
+              {!scanResults?.foodName
+                ? 'No food detected'
+                : scanResults.allergens.hasAllergens
+                  ? 'Allergens Detected!'
+                  : 'Safe to Eat!'}
+            </Text>
+            {scanResults?.foodName && (
+              <Text style={{ fontSize: 16, color: Colors.textSecondary, marginBottom: 8 }}>{scanResults.foodName}</Text>
+            )}
+            {scanResults?.foodName && userAllergens.length === 0 && (
+              <Text style={{ fontSize: 13, color: Colors.textTertiary, marginBottom: 8, textAlign: 'center' }}>
+                No allergens set. Add allergens in your profile for personalized analysis.
+              </Text>
+            )}
+            {scanResults?.foodName && userAllergens.length > 0 && scanResults?.allergens.detectedAllergens?.length > 0 && (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 }}>
+                {scanResults.allergens.detectedAllergens.map((allergen, i) => (
+                  <View key={i} style={{ backgroundColor: Colors.danger + '22', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, marginRight: 6, marginBottom: 2 }}>
+                    <Text style={{ fontSize: 12, color: Colors.danger, fontWeight: '700' }}>{allergen}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+            {scanResults?.foodName && scanResults?.allergens.confidence && (
+              <Text style={{ fontSize: 13, color: Colors.textTertiary, marginBottom: 4 }}>Confidence: {Math.round(scanResults.allergens.confidence * 100)}%</Text>
+            )}
+            {scanResults?.nutritionInfo && (
+              <View style={{ backgroundColor: Colors.background, borderRadius: 12, padding: 12, marginTop: 8, marginBottom: 4, width: '100%' }}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: Colors.text, marginBottom: 4 }}>Nutrition Info</Text>
+                <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Calories: {scanResults.nutritionInfo.calories ?? 'N/A'}</Text>
+                <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Protein: {scanResults.nutritionInfo.protein ?? 'N/A'}g</Text>
+                <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Carbs: {scanResults.nutritionInfo.carbs ?? 'N/A'}g</Text>
+                <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Fat: {scanResults.nutritionInfo.fat ?? 'N/A'}g</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  header: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    backgroundColor: '#FFFFFF',
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    textAlign: 'center',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  cameraContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  camera: {
+    flex: 1,
+  },
+  scanOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  scanFrame: {
+    width: 250,
+    height: 250,
+    borderWidth: 3,
+    borderColor: '#10B981',
+    borderRadius: 20,
+    backgroundColor: 'transparent',
+  },
+  scanInstruction: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 20,
+    textAlign: 'center',
+    paddingHorizontal: 40,
+  },
+  controls: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: 30,
+    paddingHorizontal: 40,
+    backgroundColor: '#FFFFFF',
+  },
+  controlButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  captureButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    overflow: 'hidden',
+  },
+  captureButtonGradient: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  permissionContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    backgroundColor: '#F9FAFB',
+  },
+  permissionTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  permissionText: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 30,
+  },
+  permissionButton: {
+    backgroundColor: '#10B981',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+  },
+  permissionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  analyzingContainer: {
+    paddingHorizontal: 40,
+  },
+  analyzingCard: {
+    padding: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+  },
+  analyzingTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginTop: 16,
+  },
+  analyzingText: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    opacity: 0.8,
+    marginTop: 8,
+  },
+  resultsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  resultsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    maxHeight: height * 0.8,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    zIndex: 1,
+  },
+  resultHeader: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  resultTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  resultStatus: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  allergenSection: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  allergenItem: {
+    backgroundColor: '#FEE2E2',
+    padding: 8,
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  allergenText: {
+    color: '#DC2626',
+    fontWeight: '600',
+  },
+  ingredientSection: {
+    marginBottom: 20,
+  },
+  ingredientText: {
+    color: '#6B7280',
+    lineHeight: 20,
+  },
+
+  confidenceSection: {
+    alignItems: 'center',
+  },
+  confidenceText: {
+    color: '#6B7280',
+    fontSize: 12,
+  },
+  streamingContainer: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 8,
+    maxHeight: 100,
+  },
+  streamingText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  allergenDescription: {
+    color: '#6B7280',
+    fontSize: 14,
+    fontStyle: 'italic',
+    marginTop: 8,
+  },
+  recommendationSection: {
+    marginBottom: 20,
+  },
+  recommendationItem: {
+    marginBottom: 4,
+  },
+  recommendationText: {
+    color: '#6B7280',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  safetySection: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  safetyScore: {
+    color: '#10B981',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  personalSection: {
+    marginBottom: 20,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#FEF3C7',
+  },
+  personalRecommendationItem: {
+    marginBottom: 4,
+  },
+  personalRecommendationText: {
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
+  },
+  noFoodContainer: {
+    alignItems: 'center',
+  },
+  noFoodText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 8,
+    paddingHorizontal: 20,
+  },
+});

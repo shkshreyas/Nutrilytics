@@ -1,0 +1,117 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle with Gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4F46E5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#06B6D4;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Glow Effect -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Inner Gradient for Apple -->
+    <radialGradient id="appleGradient" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" style="stop-color:#10B981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </radialGradient>
+    
+    <!-- Scanner Line Gradient -->
+    <linearGradient id="scanGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#F59E0B;stop-opacity:0" />
+      <stop offset="50%" style="stop-color:#F59E0B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F59E0B;stop-opacity:0" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main Background Circle -->
+  <circle cx="100" cy="100" r="95" fill="url(#bgGradient)" filter="url(#glow)"/>
+  
+  <!-- Apple Shape (Main Food Symbol) -->
+  <path d="M100 60 
+           C85 60, 75 70, 75 85
+           C75 100, 85 120, 100 130
+           C115 120, 125 100, 125 85
+           C125 70, 115 60, 100 60 Z" 
+        fill="url(#appleGradient)" 
+        stroke="white" 
+        stroke-width="2"/>
+  
+  <!-- Apple Leaf -->
+  <path d="M105 65 
+           C110 60, 115 55, 120 60
+           C115 65, 110 70, 105 65 Z" 
+        fill="#10B981" 
+        opacity="0.8"/>
+  
+  <!-- Scanner Frame (Viewfinder) -->
+  <rect x="60" y="60" width="80" height="80" 
+        fill="none" 
+        stroke="white" 
+        stroke-width="3" 
+        stroke-dasharray="20,5"
+        opacity="0.7"/>
+  
+  <!-- Corner Brackets -->
+  <g stroke="white" stroke-width="4" fill="none" opacity="0.9">
+    <!-- Top Left -->
+    <path d="M55 55 L55 75 M55 55 L75 55"/>
+    <!-- Top Right -->
+    <path d="M145 55 L145 75 M145 55 L125 55"/>
+    <!-- Bottom Left -->
+    <path d="M55 145 L55 125 M55 145 L75 145"/>
+    <!-- Bottom Right -->
+    <path d="M145 145 L145 125 M145 145 L125 145"/>
+  </g>
+  
+  <!-- Scanning Line (Animated) -->
+  <rect x="60" y="90" width="80" height="2" fill="url(#scanGradient)" opacity="0.8">
+    <animateTransform
+      attributeName="transform"
+      type="translate"
+      values="0,-30; 0,30; 0,-30"
+      dur="2s"
+      repeatCount="indefinite"/>
+  </rect>
+  
+  <!-- Data Points (Analytics Visualization) -->
+  <circle cx="85" cy="120" r="3" fill="#F59E0B" opacity="0.8">
+    <animate attributeName="opacity" values="0.8;0.3;0.8" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="100" cy="115" r="3" fill="#F59E0B" opacity="0.6">
+    <animate attributeName="opacity" values="0.6;0.2;0.6" dur="1.8s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="115" cy="125" r="3" fill="#F59E0B" opacity="0.7">
+    <animate attributeName="opacity" values="0.7;0.4;0.7" dur="1.2s" repeatCount="indefinite"/>
+  </circle>
+  
+  <!-- Shield Icon (Safety/Protection) -->
+  <path d="M100 45
+           C95 45, 90 47, 90 52
+           L90 58
+           C90 63, 95 68, 100 70
+           C105 68, 110 63, 110 58
+           L110 52
+           C110 47, 105 45, 100 45 Z" 
+        fill="white" 
+        opacity="0.9"/>
+  
+  <!-- Checkmark inside shield -->
+  <path d="M96 55 L99 58 L104 53" 
+        stroke="#10B981" 
+        stroke-width="2" 
+        fill="none" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"/>
+  
+  <!-- Subtle Pulse Animation for the whole logo -->
+  <circle cx="100" cy="100" r="95" fill="none" stroke="white" stroke-width="2" opacity="0.3">
+    <animate attributeName="r" values="95;100;95" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.3;0.1;0.3" dur="3s" repeatCount="indefinite"/>
+  </circle>
+</svg>
