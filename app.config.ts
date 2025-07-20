@@ -1,0 +1,70 @@
+import { ExpoConfig, ConfigContext } from 'expo/config';
+
+export default ({ config }: ConfigContext): ExpoConfig => ({
+  ...config,
+  name: 'Nutrilytics',
+  slug: 'nutrilytics',
+  version: '1.0.0',
+  orientation: 'portrait',
+  icon: './assets/images/icon.png',
+  scheme: 'nutrilytics',
+  userInterfaceStyle: 'automatic',
+  splash: {
+    image: './assets/images/icon.png',
+    resizeMode: 'contain',
+    backgroundColor: '#ffffff',
+    tabletImage: './assets/images/icon.png',
+    dark: {
+      image: './assets/images/icon.png',
+      resizeMode: 'contain',
+      backgroundColor: '#1F2937'
+    }
+  },
+  assetBundlePatterns: [
+    'assets/images/icon.png',
+    'assets/images/favicon.png'
+  ],
+  ios: {
+    supportsTablet: true,
+    bundleIdentifier: 'shk.health.nutrilytics',
+    buildNumber: '1',
+    infoPlist: {
+      NSCameraUsageDescription: 'This app uses the camera to scan food items for allergen detection.',
+      NSPhotoLibraryUsageDescription: 'This app accesses your photo library to analyze food images for allergens.',
+      NSMicrophoneUsageDescription: 'This app may use the microphone for voice input features.'
+    }
+  },
+  android: {
+    adaptiveIcon: {
+      foregroundImage: './assets/images/icon.png',
+      backgroundColor: '#ffffff'
+    },
+    package: 'shk.health.nutrilytics',
+    permissions: [
+      'android.permission.CAMERA',
+      'android.permission.INTERNET',
+      'android.permission.ACCESS_NETWORK_STATE'
+    ],
+    versionCode: 1
+  },
+  web: {
+    bundler: 'metro',
+    output: 'static',
+    favicon: './assets/images/favicon.png'
+  },
+  plugins: [
+    'expo-router',
+    'expo-font'
+  ],
+  experiments: {
+    typedRoutes: true
+  },
+  extra: {
+    router: {
+      origin: false
+    },
+    eas: {
+      projectId: '6a17e40a-ecdd-45b3-81c4-04fb822a1c4d'
+    }
+  }
+}); 

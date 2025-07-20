@@ -14,8 +14,8 @@ export const Colors = {
   textTertiary: '#9CA3AF',
   border: '#E5E7EB',
   shadow: 'rgba(0,0,0,0.05)',
-  gradient: ['#10B981', '#059669'],
-  gradientBlue: ['#3B82F6', '#1D4ED8'],
+  gradient: ['#10B981', '#059669'] as const,
+  gradientBlue: ['#3B82F6', '#1D4ED8'] as const,
   gold: '#FFD700',
 };
 

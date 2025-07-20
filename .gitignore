@@ -22,7 +22,7 @@ expo-env.d.ts
 npm-debug.*
 yarn-debug.*
 yarn-error.*
-
+PLAY_STORE_INFO.md
 # macos
 .DS_Store
 *.pem

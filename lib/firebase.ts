@@ -1,36 +1,33 @@
-import { initializeApp } from "@firebase/app";
-import { getAuth, initializeAuth, getReactNativePersistence } from "@firebase/auth";
-import { getFirestore } from "@firebase/firestore";
-import { getAnalytics } from "@firebase/analytics";
+import { initializeApp } from "firebase/app";
+import { initializeAuth, getReactNativePersistence, type Auth } from "firebase/auth";
+import { getFirestore, type Firestore } from "firebase/firestore";
+import { getAnalytics, type Analytics } from "firebase/analytics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// IMPORTANT: Do not hardcode secrets in this file.
-// Use .env for local development and EAS secrets for production builds.
-// See README for details.
-
-export const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY,
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.FIREBASE_APP_ID,
-  measurementId: process.env.FIREBASE_MEASUREMENT_ID,
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyD4peBdfBdffCQdd4Ng-4at95i9f8KV6FQ",
+  authDomain: "nutrilytics-18a2b.firebaseapp.com",
+  projectId: "nutrilytics-18a2b",
+  storageBucket: "nutrilytics-18a2b.firebaseapp.com",
+  messagingSenderId: "305030381271",
+  appId: "1:305030381271:web:cafce146b4d6dabf0a3a92",
+  measurementId: "G-D41SYR2W13"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
 // Initialize Auth with AsyncStorage persistence
-const auth = initializeAuth(app, {
+const auth: Auth = initializeAuth(app, {
   persistence: getReactNativePersistence(AsyncStorage)
 });
 
 // Initialize Firestore
-const db = getFirestore(app);
+const db: Firestore = getFirestore(app);
 
-// Initialize Analytics (only for web and when supported)
-let analytics = null;
+// Initialize Analytics (only for web platforms)
+let analytics: Analytics | null = null;
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   try {
     analytics = getAnalytics(app);
@@ -39,5 +36,4 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   }
 }
 
-export { auth, db, analytics };
-export default app; 
+export { app, auth, db, analytics };

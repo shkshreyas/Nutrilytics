@@ -54,7 +54,7 @@ export default function AuthScreen() {
     setLoading(true);
     try {
       await signIn(email, password);
-      router.replace('/(tabs)');
+      // Navigation will be handled automatically by the app layout
     } catch (error: any) {
       Alert.alert('Sign In Failed', error.message);
     } finally {
@@ -71,7 +71,7 @@ export default function AuthScreen() {
     setLoading(true);
     try {
       await signUp(email, password, name.trim());
-      router.replace('/(tabs)');
+      // Navigation will be handled automatically by the app layout
     } catch (error: any) {
       if (error.code === 'auth/email-already-in-use') {
         setStep('password');
@@ -89,7 +89,7 @@ export default function AuthScreen() {
     setLoading(true);
     try {
       await googleSignIn();
-      router.replace('/(tabs)');
+      // Navigation will be handled automatically by the app layout
     } catch (error: any) {
       Alert.alert('Google Sign In Failed', error.message);
     } finally {

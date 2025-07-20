@@ -9,8 +9,7 @@ import { Colors, GlobalStyles } from '../../theme';
 import * as Haptics from 'expo-haptics';
 
 export default function ProfileScreen() {
-  const { user, signOutUser } = useAuth();
-  const [userData, setUserData] = useState<any>(null);
+  const { user, userData, signOutUser, refreshUserData } = useAuth();
   const [notifications, setNotifications] = useState(true);
   const [autoScan, setAutoScan] = useState(false);
   const [hapticFeedback, setHapticFeedback] = useState(true);
@@ -25,36 +24,21 @@ export default function ProfileScreen() {
   const [editingAllergenName, setEditingAllergenName] = useState('');
 
   useEffect(() => {
-    if (user) {
-      loadUserData();
-    }
-  }, [user]);
-
-  useEffect(() => {
     if (userData?.avatar) {
       setSelectedAvatar(userData.avatar);
     }
   }, [userData]);
 
-  const loadUserData = async () => {
-    try {
-      if (user?.uid) {
-        const data = await UserService.getUserData(user.uid);
-        setUserData(data);
-        
-        // Load user's allergens
-        if (data?.allergens) {
-          setUserAllergens(data.allergens.map((allergen: string) => ({
-            name: allergen,
-            severity: 'high',
-            color: '#DC2626'
-          })));
-        }
-      }
-    } catch (error) {
-      console.error('Error loading user data:', error);
+  // Load user's allergens when userData changes
+  useEffect(() => {
+    if (userData?.allergens) {
+      setUserAllergens(userData.allergens.map((allergen: string) => ({
+        name: allergen,
+        severity: 'high',
+        color: '#DC2626'
+      })));
     }
-  };
+  }, [userData]);
 
   const handleSignOut = () => {
     Alert.alert(
@@ -147,7 +131,7 @@ export default function ProfileScreen() {
     if (!newName.trim() || !user?.uid) return;
     try {
       await UserService.updateUserData(user.uid, { name: newName.trim(), avatar: selectedAvatar });
-      setUserData({ ...userData, name: newName.trim(), avatar: selectedAvatar });
+      await refreshUserData(); // Refresh user data from context
       setEditingName(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {

@@ -7,31 +7,68 @@
     "icon": "./assets/images/icon.png",
     "scheme": "nutrilytics",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff",
+      "tabletImage": "./assets/images/icon.png",
+      "dark": {
+        "image": "./assets/images/icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#1F2937"
+      }
+    },
+    "assetBundlePatterns": [
+      "assets/images/icon.png",
+      "assets/images/favicon.png",
+      "assets/images/nutrilytics_logo.svg"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "shk.health.nutrilytics",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to scan food items for allergen detection.",
+        "NSPhotoLibraryUsageDescription": "This app accesses your photo library to analyze food images for allergens.",
+        "NSMicrophoneUsageDescription": "This app may use the microphone for voice input features."
+      },
+      "appStoreUrl": "https://apps.apple.com/app/nutrilytics/id1234567890"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "shk.health.nutrilytics",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_EXTERNAL_STORAGE"
+      ],
+      "versionCode": 1,
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=shk.health.nutrilytics"
     },
     "web": {
       "bundler": "metro",
-      "output": "single",
+      "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
       "expo-router",
-      "expo-font",
-      "expo-web-browser"
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
-      "router": {},
+      "router": {
+        "origin": false
+      },
       "eas": {
         "projectId": "6a17e40a-ecdd-45b3-81c4-04fb822a1c4d"
       }
-    },
-    "android": {
-      "package": "shk.health.nutrilytics"
     }
   }
 }

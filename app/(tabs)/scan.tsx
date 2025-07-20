@@ -1,13 +1,15 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions, Modal, Image, ColorValue } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions, Modal, Image, ColorValue, ScrollView } from 'react-native';
 import { useState, useRef, useEffect } from 'react';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Camera, RotateCcw, Image as ImageIcon, Zap, X, CircleCheck as CheckCircle, TriangleAlert as AlertTriangle } from 'lucide-react-native';
+import { Camera, RotateCcw, Image as ImageIcon, Zap, X, CircleCheck as CheckCircle, TriangleAlert as AlertTriangle, Barcode, FileText } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { AIService, FoodAnalysis } from '@/services/aiService';
+import { enhancedScanService, ScanResult } from '@/services/enhancedScanService';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserService } from '@/services/userService';
 import { Colors, GlobalStyles } from '../../theme';
+import BarcodeScanner from '@/components/BarcodeScanner';
 
 const { width, height } = Dimensions.get('window');
 
@@ -18,8 +20,11 @@ export default function ScanScreen() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [scanResults, setScanResults] = useState<FoodAnalysis | null>(null);
+  const [enhancedResults, setEnhancedResults] = useState<ScanResult | null>(null);
   const [streamingText, setStreamingText] = useState('');
   const [userAllergens, setUserAllergens] = useState<string[]>([]);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [scanMethod, setScanMethod] = useState<'ai' | 'enhanced' | 'barcode' | 'ocr' | 'combined'>('enhanced');
   const cameraRef = useRef<any>(null);
 
   useEffect(() => {
@@ -89,49 +94,114 @@ export default function ScanScreen() {
         userAllergensFetched = userData?.allergens || [];
         setUserAllergens(userAllergensFetched);
       }
-      
-      // Start streaming analysis for real-time feedback
-      AIService.streamAnalysis(imageUri, (chunk) => {
-        setStreamingText(prev => prev + chunk);
-      });
 
-      // Perform full analysis with user allergens
-      const analysis = await AIService.analyzeFoodImage(imageUri, userAllergensFetched);
-      if (!analysis.foodName) {
-        setScanResults(null);
-        setIsAnalyzing(false);
-        setShowResults(true);
-        return;
+      // Enhanced scanning with multiple APIs
+      const enhancedResult = await enhancedScanService.scanFood(imageUri);
+      setEnhancedResults(enhancedResult);
+      setScanMethod(enhancedResult.method);
+
+      // Also run Firebase AI analysis for comparison
+      try {
+        const aiAnalysis = await AIService.analyzeFoodImage(imageUri, userAllergensFetched);
+        setScanResults(aiAnalysis);
+      } catch (aiError) {
+        console.log('Firebase AI analysis failed, using enhanced results only');
       }
-      setScanResults(analysis);
-      
-      // Update user stats and save scan to history only if food was detected
-      if (user?.uid && analysis.foodName) {
-        await UserService.addScanResult(user.uid, analysis.allergens.hasAllergens);
+
+      // Update user stats and save scan to history
+      if (user?.uid) {
+        const hasAllergens = enhancedResult.allergens.length > 0;
+        await UserService.addScanResult(user.uid, hasAllergens);
         await UserService.saveScanToHistory(user.uid, {
-          name: analysis.foodName,
-          brand: 'Unknown', // Could be extracted from image analysis
-          status: analysis.allergens.hasAllergens ? 'danger' : 'safe',
-          allergens: analysis.allergens.detectedAllergens,
+          name: enhancedResult.productName || 'Unknown Food',
+          brand: 'Unknown',
+          status: hasAllergens ? 'danger' : 'safe',
+          allergens: enhancedResult.allergens,
           scanDate: new Date().toISOString(),
-          confidence: Math.round(analysis.allergens.confidence * 100),
+          confidence: Math.round(enhancedResult.confidence * 100),
         });
       }
-      
+
       setIsAnalyzing(false);
       setShowResults(true);
     } catch (error) {
       console.error('Error analyzing image:', error);
       Alert.alert('Analysis Error', 'Failed to analyze the image. Please try again.');
-      setScanResults(null);
       setIsAnalyzing(false);
       setShowResults(true);
     }
   };
 
+  const handleBarcodeDetected = async (barcode: string) => {
+    setShowBarcodeScanner(false);
+    setIsAnalyzing(true);
+    
+    try {
+      const barcodeResult = await enhancedScanService.lookupBarcode(barcode);
+      if (barcodeResult) {
+        setEnhancedResults(barcodeResult);
+        setScanMethod('barcode');
+        
+        // Update user stats
+        if (user?.uid) {
+          const hasAllergens = barcodeResult.allergens.length > 0;
+          await UserService.addScanResult(user.uid, hasAllergens);
+          await UserService.saveScanToHistory(user.uid, {
+            name: barcodeResult.productName || 'Unknown Product',
+            brand: 'Unknown',
+            status: hasAllergens ? 'danger' : 'safe',
+            allergens: barcodeResult.allergens,
+            scanDate: new Date().toISOString(),
+            confidence: Math.round(barcodeResult.confidence * 100),
+          });
+        }
+      } else {
+        Alert.alert('Product Not Found', 'This barcode was not found in our database. Try scanning the ingredients list instead.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to look up product information.');
+    }
+    
+    setIsAnalyzing(false);
+    setShowResults(true);
+  };
+
   const closeResults = () => {
     setShowResults(false);
     setScanResults(null);
+    setEnhancedResults(null);
+  };
+
+  const getMethodIcon = () => {
+    switch (scanMethod) {
+      case 'barcode':
+        return <Barcode size={20} color="#3B82F6" />;
+      case 'enhanced':
+      case 'ocr':
+        return <FileText size={20} color="#10B981" />;
+      case 'ai':
+        return <Zap size={20} color="#F59E0B" />;
+      case 'combined':
+        return <Zap size={20} color="#8B5CF6" />;
+      default:
+        return <Zap size={20} color="#F59E0B" />;
+    }
+  };
+
+  const getMethodText = () => {
+    switch (scanMethod) {
+      case 'barcode':
+        return 'Barcode Lookup';
+      case 'enhanced':
+      case 'ocr':
+        return 'Enhanced OCR';
+      case 'ai':
+        return 'AI Analysis';
+      case 'combined':
+        return 'Combined Analysis';
+      default:
+        return 'AI Analysis';
+    }
   };
 
   return (
@@ -163,12 +233,25 @@ export default function ScanScreen() {
         </View>
       </View>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 24, marginBottom: 8 }}>
-        <TouchableOpacity style={[GlobalStyles.roundedButton, { backgroundColor: Colors.card, marginHorizontal: 12, padding: 12 }]} onPress={pickImage}>
+      {/* Top row - Gallery, Barcode, Camera Flip buttons */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', marginTop: 24, marginBottom: 16, paddingHorizontal: 20 }}>
+        <TouchableOpacity style={[GlobalStyles.roundedButton, { backgroundColor: Colors.card, padding: 16 }]} onPress={pickImage}>
           <ImageIcon size={28} color={Colors.textSecondary} />
         </TouchableOpacity>
+        
+        <TouchableOpacity style={[GlobalStyles.roundedButton, { backgroundColor: Colors.card, padding: 16 }]} onPress={() => setShowBarcodeScanner(true)}>
+          <Barcode size={28} color={Colors.textSecondary} />
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={[GlobalStyles.roundedButton, { backgroundColor: Colors.card, padding: 16 }]} onPress={toggleCameraFacing}>
+          <RotateCcw size={28} color={Colors.textSecondary} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Bottom row - Main Camera button */}
+      <View style={{ alignItems: 'center', marginBottom: 8 }}>
         <TouchableOpacity
-          style={[GlobalStyles.roundedButton, { backgroundColor: Colors.info, marginHorizontal: 12, elevation: 8, shadowColor: Colors.info, padding: 18 }]}
+          style={[GlobalStyles.roundedButton, { backgroundColor: Colors.info, elevation: 8, shadowColor: Colors.info, padding: 18 }]}
           onPress={takePicture}
           disabled={isAnalyzing}
         >
@@ -179,9 +262,6 @@ export default function ScanScreen() {
             end={{ x: 1, y: 1 }}>
             <Camera size={36} color="#FFFFFF" />
           </LinearGradient>
-        </TouchableOpacity>
-        <TouchableOpacity style={[GlobalStyles.roundedButton, { backgroundColor: Colors.card, marginHorizontal: 12, padding: 12 }]} onPress={toggleCameraFacing}>
-          <RotateCcw size={28} color={Colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -209,57 +289,106 @@ export default function ScanScreen() {
       {/* Results Modal */}
       <Modal visible={showResults} transparent>
         <View style={styles.modalOverlay}>
-          <View style={[GlobalStyles.card, { borderRadius: 24, backgroundColor: Colors.card, alignItems: 'center', padding: 24, maxWidth: width * 0.9 }]}> 
-            <TouchableOpacity style={{ position: 'absolute', top: 12, right: 12, zIndex: 2 }} onPress={closeResults}>
-              <X size={28} color={Colors.textSecondary} />
-            </TouchableOpacity>
-            <View style={{ alignItems: 'center', marginBottom: 12 }}>
-              {!scanResults?.foodName ? (
-                <AlertTriangle size={48} color={Colors.warning} />
-              ) : scanResults.allergens.hasAllergens ? (
-                <AlertTriangle size={48} color={Colors.danger} />
-              ) : (
-                <CheckCircle size={48} color={Colors.safe} />
+          <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <View style={[GlobalStyles.card, { borderRadius: 24, backgroundColor: Colors.card, padding: 24, maxWidth: width * 0.9, maxHeight: height * 0.8 }]}>
+              <TouchableOpacity style={{ position: 'absolute', top: 12, right: 12, zIndex: 2 }} onPress={closeResults}>
+                <X size={28} color={Colors.textSecondary} />
+              </TouchableOpacity>
+
+              {/* Method indicator */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                {getMethodIcon()}
+                <Text style={{ marginLeft: 8, fontSize: 14, color: Colors.textSecondary, fontWeight: '600' }}>
+                  {getMethodText()}
+                </Text>
+              </View>
+
+              <View style={{ alignItems: 'center', marginBottom: 12 }}>
+                {!enhancedResults?.allergens || enhancedResults.allergens.length === 0 ? (
+                  <CheckCircle size={48} color={Colors.safe} />
+                ) : (
+                  <AlertTriangle size={48} color={Colors.danger} />
+                )}
+              </View>
+
+              <Text style={{ fontSize: 20, fontWeight: '700', color: Colors.text, marginBottom: 8, textAlign: 'center' }}>
+                {!enhancedResults?.allergens || enhancedResults.allergens.length === 0
+                  ? 'Safe to Eat!'
+                  : 'Allergens Detected!'}
+              </Text>
+
+              {enhancedResults?.productName && (
+                <Text style={{ fontSize: 16, color: Colors.textSecondary, marginBottom: 8, textAlign: 'center' }}>
+                  {enhancedResults.productName}
+                </Text>
+              )}
+
+              {enhancedResults?.allergens && enhancedResults.allergens.length > 0 && (
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 8 }}>Detected Allergens:</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                    {enhancedResults.allergens.map((allergen, i) => (
+                      <View key={i} style={{ backgroundColor: Colors.danger + '22', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, marginRight: 6, marginBottom: 4 }}>
+                        <Text style={{ fontSize: 12, color: Colors.danger, fontWeight: '700' }}>{allergen}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {enhancedResults?.ingredients && (
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 8 }}>Ingredients:</Text>
+                  <Text style={{ fontSize: 14, color: Colors.textSecondary, lineHeight: 20 }}>
+                    {enhancedResults.ingredients}
+                  </Text>
+                </View>
+              )}
+
+              {enhancedResults?.confidence && (
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ fontSize: 14, color: Colors.textTertiary, textAlign: 'center' }}>
+                    Confidence: {Math.round(enhancedResults.confidence * 100)}%
+                  </Text>
+                </View>
+              )}
+
+              {enhancedResults?.warnings && enhancedResults.warnings.length > 0 && (
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: Colors.warning, marginBottom: 8 }}>Warnings:</Text>
+                  {enhancedResults.warnings.map((warning, i) => (
+                    <Text key={i} style={{ fontSize: 14, color: Colors.textSecondary, marginBottom: 4, fontStyle: 'italic' }}>
+                      • {warning}
+                    </Text>
+                  ))}
+                </View>
+              )}
+
+              {/* Firebase AI comparison if available */}
+              {scanResults && (
+                <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: Colors.border }}>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 8 }}>AI Analysis Comparison:</Text>
+                  <Text style={{ fontSize: 14, color: Colors.textSecondary }}>
+                    Food: {scanResults.foodName || 'Unknown'}
+                  </Text>
+                  {scanResults.allergens.hasAllergens && (
+                    <Text style={{ fontSize: 14, color: Colors.danger, fontWeight: '600' }}>
+                      AI detected allergens: {scanResults.allergens.detectedAllergens.join(', ')}
+                    </Text>
+                  )}
+                </View>
               )}
             </View>
-            <Text style={{ fontSize: 20, fontWeight: '700', color: Colors.text, marginBottom: 8 }}>
-              {!scanResults?.foodName
-                ? 'No food detected'
-                : scanResults.allergens.hasAllergens
-                  ? 'Allergens Detected!'
-                  : 'Safe to Eat!'}
-            </Text>
-            {scanResults?.foodName && (
-              <Text style={{ fontSize: 16, color: Colors.textSecondary, marginBottom: 8 }}>{scanResults.foodName}</Text>
-            )}
-            {scanResults?.foodName && userAllergens.length === 0 && (
-              <Text style={{ fontSize: 13, color: Colors.textTertiary, marginBottom: 8, textAlign: 'center' }}>
-                No allergens set. Add allergens in your profile for personalized analysis.
-              </Text>
-            )}
-            {scanResults?.foodName && userAllergens.length > 0 && scanResults?.allergens.detectedAllergens?.length > 0 && (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 }}>
-                {scanResults.allergens.detectedAllergens.map((allergen, i) => (
-                  <View key={i} style={{ backgroundColor: Colors.danger + '22', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, marginRight: 6, marginBottom: 2 }}>
-                    <Text style={{ fontSize: 12, color: Colors.danger, fontWeight: '700' }}>{allergen}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-            {scanResults?.foodName && scanResults?.allergens.confidence && (
-              <Text style={{ fontSize: 13, color: Colors.textTertiary, marginBottom: 4 }}>Confidence: {Math.round(scanResults.allergens.confidence * 100)}%</Text>
-            )}
-            {scanResults?.nutritionInfo && (
-              <View style={{ backgroundColor: Colors.background, borderRadius: 12, padding: 12, marginTop: 8, marginBottom: 4, width: '100%' }}>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: Colors.text, marginBottom: 4 }}>Nutrition Info</Text>
-                <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Calories: {scanResults.nutritionInfo.calories ?? 'N/A'}</Text>
-                <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Protein: {scanResults.nutritionInfo.protein ?? 'N/A'}g</Text>
-                <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Carbs: {scanResults.nutritionInfo.carbs ?? 'N/A'}g</Text>
-                <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Fat: {scanResults.nutritionInfo.fat ?? 'N/A'}g</Text>
-              </View>
-            )}
-          </View>
+          </ScrollView>
         </View>
+      </Modal>
+
+      {/* Barcode Scanner Modal */}
+      <Modal visible={showBarcodeScanner} animationType="slide">
+        <BarcodeScanner
+          onBarcodeDetected={handleBarcodeDetected}
+          onClose={() => setShowBarcodeScanner(false)}
+        />
       </Modal>
     </View>
   );

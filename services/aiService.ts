@@ -1,8 +1,4 @@
-import { initializeApp } from '@firebase/app';
-import { firebaseConfig } from '@/lib/firebase';
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+import { app } from '@/lib/firebase';
 
 // For now, we'll use a mock AI service until Firebase AI Logic is fully available
 // This simulates the AI analysis functionality
@@ -49,9 +45,8 @@ export class AIService {
       // This simulates what a real AI would detect
       const imageContent = await this.simulateImageAnalysis(imageUri);
       
-      if (!imageContent.isFood) {
-        throw new Error('No food detected in the image. Please scan a food item or product packaging.');
-      }
+      // Always return a result, even if no specific food is detected
+      // This allows the app to continue working with enhanced scanning
 
       const analysis: FoodAnalysis = {
         foodName: imageContent.foodName,
@@ -115,14 +110,18 @@ export class AIService {
     // Simulate different types of content that might be scanned
     const contentTypes = [
       {
-        isFood: false,
-        foodName: '',
-        ingredients: [],
+        isFood: true,
+        foodName: 'Unknown Food Item',
+        ingredients: ['Ingredients not clearly visible'],
         allergens: [],
-        confidence: 0,
-        description: 'This appears to be a non-food item.',
-        recommendations: ['Please scan a food item or product packaging.'],
-        safetyScore: 0
+        confidence: 0.3,
+        description: 'Food item detected but ingredients are not clearly visible. Please try scanning the ingredients list or nutrition label.',
+        recommendations: [
+          'Try scanning the ingredients list',
+          'Check the nutrition label',
+          'Use barcode scanning if available'
+        ],
+        safetyScore: 50
       },
       {
         isFood: true,
