@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc, updateDoc, increment, collection, getDocs, query, orderBy, limit, addDoc, deleteDoc } from '@firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db } from '../lib/firebase';
 
 export interface UserData {
   email: string;

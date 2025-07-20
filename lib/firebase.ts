@@ -1,15 +1,15 @@
 import { initializeApp } from "firebase/app";
-import { initializeAuth, getReactNativePersistence, type Auth } from "firebase/auth";
+import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
 import { getAnalytics, type Analytics } from "firebase/analytics";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyD4peBdfBdffCQdd4Ng-4at95i9f8KV6FQ",
   authDomain: "nutrilytics-18a2b.firebaseapp.com",
   projectId: "nutrilytics-18a2b",
-  storageBucket: "nutrilytics-18a2b.firebaseapp.com",
+  storageBucket: "nutrilytics-18a2b.firebasestorage.app",
   messagingSenderId: "305030381271",
   appId: "1:305030381271:web:cafce146b4d6dabf0a3a92",
   measurementId: "G-D41SYR2W13"
@@ -18,10 +18,8 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Auth with AsyncStorage persistence
-const auth: Auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage)
-});
+// Initialize Auth (will use default persistence)
+const auth: Auth = getAuth(app);
 
 // Initialize Firestore
 const db: Firestore = getFirestore(app);

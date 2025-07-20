@@ -14,8 +14,9 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Crypto from 'expo-crypto';
 import Constants from 'expo-constants';
 import { doc, setDoc, getDoc } from '@firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { auth, db } from '../lib/firebase';
 import { GOOGLE_OAUTH_CONFIG } from '../constants';
+import { NotificationService } from '../services/notificationService';
 
 interface AuthContextType {
   user: User | null;
@@ -59,7 +60,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserDataLoading(true);
       const data = await getDoc(doc(db, 'users', uid));
       if (data.exists()) {
-        setUserData(data.data());
+        const userData = data.data();
+        setUserData(userData);
+        
+        // Initialize notifications if user has them enabled
+        if (userData.notifications !== false) {
+          await NotificationService.scheduleDailyNotifications();
+        }
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -108,6 +115,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOutUser = async () => {
     try {
+      // Cancel all notifications when user signs out
+      await NotificationService.cancelAllNotifications();
       await signOut(auth);
       console.log('User signed out');
     } catch (error: any) {

@@ -4,8 +4,8 @@ import { Colors, GlobalStyles } from '../../theme';
 import { avatarOptions } from '../../assets/images/avatars';
 import { useState, useEffect } from 'react';
 import { Search, Filter, Calendar, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Clock } from 'lucide-react-native';
-import { useAuth } from '@/contexts/AuthContext';
-import { UserService } from '@/services/userService';
+import { useAuth } from '../../contexts/AuthContext';
+import { UserService } from '../../services/userService';
 
 export default function HistoryScreen() {
   const { user } = useAuth();
@@ -24,7 +24,7 @@ export default function HistoryScreen() {
   useEffect(() => {
     if (user && user.uid) {
       UserService.getUserData(user.uid).then(data => {
-        setUserAvatar(data?.avatar || '😀');
+        setUserAvatar('😀');
       });
     }
   }, [user]);

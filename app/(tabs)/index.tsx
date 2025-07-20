@@ -2,8 +2,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Image
 import { LinearGradient } from 'expo-linear-gradient';
 import { Shield, Camera, Clock, TrendingUp, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { useAuth } from '@/contexts/AuthContext';
-import { UserService } from '@/services/userService';
+import { useAuth } from '../../contexts/AuthContext';
+import { UserService } from '../../services/userService';
 import { useEffect, useState } from 'react';
 import { Colors, GlobalStyles } from '../../theme';
 

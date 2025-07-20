@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useFrameworkReady } from '@/hooks/useFrameworkReady';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import SplashScreen from '@/components/SplashScreen';
+import { useFrameworkReady } from '../hooks/useFrameworkReady';
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import SplashScreen from '../components/SplashScreen';
 
 function RootLayoutContent() {
   const { user, loading, userDataLoading } = useAuth();

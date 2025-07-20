@@ -4,12 +4,12 @@ import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Camera, RotateCcw, Image as ImageIcon, Zap, X, CircleCheck as CheckCircle, TriangleAlert as AlertTriangle, Barcode, FileText } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { AIService, FoodAnalysis } from '@/services/aiService';
-import { enhancedScanService, ScanResult } from '@/services/enhancedScanService';
-import { useAuth } from '@/contexts/AuthContext';
-import { UserService } from '@/services/userService';
+import { AIService, FoodAnalysis } from '../../services/aiService';
+import { enhancedScanService, ScanResult } from '../../services/enhancedScanService';
+import { useAuth } from '../../contexts/AuthContext';
+import { UserService } from '../../services/userService';
 import { Colors, GlobalStyles } from '../../theme';
-import BarcodeScanner from '@/components/BarcodeScanner';
+import BarcodeScanner from '../../components/BarcodeScanner';
 
 const { width, height } = Dimensions.get('window');
 

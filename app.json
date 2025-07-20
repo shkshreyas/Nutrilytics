@@ -45,9 +45,11 @@
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.READ_EXTERNAL_STORAGE"
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.POST_NOTIFICATIONS"
       ],
-      "versionCode": 1,
+
       "playStoreUrl": "https://play.google.com/store/apps/details?id=shk.health.nutrilytics"
     },
     "web": {
@@ -57,7 +59,14 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#10B981"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

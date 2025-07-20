@@ -1,14 +1,13 @@
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth } from '../lib/firebase';
 
 // Complete the auth session
 WebBrowser.maybeCompleteAuthSession();
 
 // Google OAuth configuration
 const GOOGLE_CLIENT_ID = '555921941405-amtqe1odfebf4ulp81dj0h5nb26r90m2.apps.googleusercontent.com';
-const GOOGLE_CLIENT_SECRET = ''; // Not needed for mobile apps
 
 // Create auth request
 const discovery = {
@@ -32,19 +31,14 @@ export class GoogleAuthService {
         extraParams: {
           access_type: 'offline',
         },
-        additionalParameters: {},
       });
 
       // Get auth URL
       const authUrl = await request.makeAuthUrlAsync(discovery);
 
       // Start auth session
-      const result = await AuthSession.startAsync({
-        authUrl,
-        returnUrl: AuthSession.makeRedirectUri({
-          scheme: 'nutrilytics',
-          path: 'auth',
-        }),
+      const result = await request.promptAsync(discovery, {
+        showInRecents: true,
       });
 
       if (result.type === 'success' && result.params.code) {

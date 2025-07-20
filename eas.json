@@ -7,6 +7,9 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "NODE_ENV": "development",
         "APP_ENV": "development",
@@ -36,17 +39,31 @@
       }
     },
     "production": {
+      "autoIncrement": false,
+      "android": {
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease",
+        "withoutCredentials": false
+      },
+      "env": {
+        "NODE_ENV": "production",
+        "APP_ENV": "production",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyD4peBdfBdffCQdd4Ng-4at95i9f8KV6FQ",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "nutrilytics-18a2b.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "nutrilytics-18a2b",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "nutrilytics-18a2b.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "305030381271",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:305030381271:web:cafce146b4d6dabf0a3a92",
+        "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-D41SYR2W13",
+        "GOOGLE_OAUTH_CLIENT_ID": "555921941405-amtqe1odfebf4ulp81dj0h5nb26r90m2.apps.googleusercontent.com"
+      }
+    },
+    "production-apk": {
       "autoIncrement": true,
       "android": {
-        "buildType": "aab",
-        "gradleCommand": ":app:bundleRelease",
-        "withoutCredentials": false,
-        "env": {
-          "ANDROID_NDK_HOME": "/opt/android-ndk"
-        }
-      },
-      "ios": {
-        "buildType": "archive"
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "withoutCredentials": false
       },
       "env": {
         "NODE_ENV": "production",

@@ -2,11 +2,13 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert, Te
 import { useState, useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { User, Shield, Bell, Settings, CircleHelp as HelpCircle, ChevronRight, CreditCard as Edit, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Heart, Database, LogOut, Pencil, Trash2 } from 'lucide-react-native';
-import { useAuth } from '@/contexts/AuthContext';
-import { UserService } from '@/services/userService';
+import { useAuth } from '../../contexts/AuthContext';
+import { UserService } from '../../services/userService';
+import { NotificationService } from '../../services/notificationService';
 import { avatarOptions } from '../../assets/images/avatars';
 import { Colors, GlobalStyles } from '../../theme';
 import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
 
 export default function ProfileScreen() {
   const { user, userData, signOutUser, refreshUserData } = useAuth();
@@ -53,7 +55,8 @@ export default function ProfileScreen() {
             try {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               await signOutUser();
-              // The app will automatically navigate to auth screen when user becomes null
+              // Redirect to auth screen for smooth transition
+              router.replace('/auth');
             } catch (error) {
               console.error('Sign out error:', error);
               Alert.alert('Error', 'Failed to sign out. Please try again.');
@@ -71,6 +74,8 @@ export default function ProfileScreen() {
     try {
       if (user?.uid) {
         await UserService.updateUserSettings(user.uid, { notifications: value });
+        // Schedule or cancel daily notifications based on toggle
+        await NotificationService.toggleNotifications(value);
       }
     } catch (error) {
       console.error('Error updating notification settings:', error);
@@ -170,6 +175,18 @@ export default function ProfileScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
+  const handleTestNotification = async () => {
+    try {
+      await NotificationService.sendTestNotification();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Test Notification', 'A test notification will appear in 2 seconds!');
+    } catch (error) {
+      console.error('Error sending test notification:', error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', 'Failed to send test notification');
+    }
+  };
+
   const stats = [
     { label: 'Foods Scanned', value: userData?.foodsScanned?.toString() || '0', icon: Database, color: '#3B82F6' },
     { label: 'Safe Foods', value: userData?.safeFoods?.toString() || '0', icon: CheckCircle, color: '#059669' },
@@ -184,6 +201,13 @@ export default function ProfileScreen() {
       icon: AlertTriangle,
       color: '#F97316',
       onPress: openManageAllergens,
+    },
+    {
+      title: 'Test Notifications',
+      subtitle: 'Send a test notification',
+      icon: Bell,
+      color: '#10B981',
+      onPress: handleTestNotification,
     },
     {
       title: 'Help & Support',
