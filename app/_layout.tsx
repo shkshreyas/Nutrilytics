@@ -6,7 +6,7 @@ import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import SplashScreen from '../components/SplashScreen';
 
 function RootLayoutContent() {
-  const { user, loading, userDataLoading, networkOffline } = useAuth();
+  const { user, loading, userDataLoading, networkOffline, needsOnboarding } = useAuth();
   useFrameworkReady();
 
   // Show splash screen while loading auth state or user data
@@ -19,7 +19,15 @@ function RootLayoutContent() {
     <>
       <Stack screenOptions={{ headerShown: false }}>
         {user ? (
-          <Stack.Screen name="(tabs)" />
+          needsOnboarding ? (
+            <>
+              <Stack.Screen name="welcome" />
+              <Stack.Screen name="onboarding" />
+              <Stack.Screen name="tutorial" />
+            </>
+          ) : (
+            <Stack.Screen name="(tabs)" />
+          )
         ) : (
           <Stack.Screen name="auth" />
         )}

@@ -16,6 +16,7 @@ interface AuthContextType {
   signOutUser: () => Promise<void>;
   checkEmailExists: (email: string) => Promise<boolean>;
   refreshUserData: () => Promise<void>;
+  needsOnboarding: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -129,6 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOutUser,
     checkEmailExists,
     refreshUserData,
+    needsOnboarding: user && userData && !userData.onboardingCompleted,
   };
 
   return (

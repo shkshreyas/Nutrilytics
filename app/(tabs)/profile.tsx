@@ -102,8 +102,39 @@ export default function ProfileScreen() {
         await UserService.updateUserSettings(user.uid, { hapticFeedback: value });
       }
     } catch (error) {
-      console.error('Error updating haptic settings:', error);
+      console.error('Error updating haptic feedback settings:', error);
     }
+  };
+
+  const handleResetOnboarding = () => {
+    Alert.alert(
+      'Reset Onboarding',
+      'This will show you the onboarding screens again. Are you sure?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Reset', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              if (user?.uid) {
+                await UserService.updateUserData(user.uid, { 
+                  onboardingCompleted: false,
+                  onboardingCompletedAt: null
+                });
+                await refreshUserData();
+                router.replace('/welcome');
+              }
+            } catch (error) {
+              console.error('Error resetting onboarding:', error);
+              Alert.alert('Error', 'Failed to reset onboarding. Please try again.');
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const addAllergen = () => {
@@ -215,6 +246,13 @@ export default function ProfileScreen() {
       icon: HelpCircle,
       color: '#3B82F6',
       onPress: () => Alert.alert('Support', 'Contact us at shkshreyaskumar@gmail.com'),
+    },
+    {
+      title: 'Reset Onboarding',
+      subtitle: 'Show onboarding screens again',
+      icon: Settings,
+      color: '#9CA3AF',
+      onPress: handleResetOnboarding,
     },
   ];
 
@@ -433,6 +471,17 @@ export default function ProfileScreen() {
               thumbColor={hapticFeedback ? '#FFFFFF' : '#F3F4F6'}
             />
           </View>
+
+          <TouchableOpacity style={styles.settingItem} onPress={handleResetOnboarding}>
+            <View style={styles.settingInfo}>
+              <Settings size={20} color="#6B7280" />
+              <View style={styles.settingText}>
+                <Text style={styles.settingTitle}>Reset Onboarding</Text>
+                <Text style={styles.settingSubtitle}>Show onboarding screens again</Text>
+              </View>
+            </View>
+            <ChevronRight size={20} color="#9CA3AF" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.menuSection}>
