@@ -1,5 +1,5 @@
-import { doc, getDoc, setDoc, updateDoc, increment, collection, getDocs, query, orderBy, limit, addDoc, deleteDoc } from '@firebase/firestore';
-import { db } from '../lib/firebase';
+import { doc, getDoc, setDoc, updateDoc, increment, collection, getDocs, query, orderBy, limit, addDoc, deleteDoc } from 'firebase/firestore';
+import { firestore } from '../lib/firebase';
 
 export interface UserData {
   email: string;
@@ -15,20 +15,35 @@ export interface UserData {
 export class UserService {
   static async getUserData(userId: string): Promise<UserData | null> {
     try {
-      const userDoc = await getDoc(doc(db, 'users', userId));
+      console.log('getUserData: firestore instance:', firestore);
+      console.log('getUserData: firestore type:', typeof firestore);
+      console.log('getUserData: firestore constructor:', firestore.constructor.name);
+      
+      // Test if firestore is properly initialized
+      if (!firestore) {
+        throw new Error('Firestore instance is null or undefined');
+      }
+      
+      const userDoc = await getDoc(doc(firestore, 'users', userId));
       if (userDoc.exists()) {
         return userDoc.data() as UserData;
       }
       return null;
     } catch (error) {
       console.error('Error fetching user data:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
       throw error;
     }
   }
 
   static async createUserData(userId: string, userData: Partial<UserData>): Promise<void> {
     try {
-      await setDoc(doc(db, 'users', userId), {
+      console.log('createUserData: firestore instance:', firestore);
+      await setDoc(doc(firestore, 'users', userId), {
         ...userData,
         createdAt: new Date(),
         foodsScanned: 0,
@@ -55,7 +70,7 @@ export class UserService {
       if (stats.safeFoods !== undefined) updates.safeFoods = increment(stats.safeFoods);
       if (stats.daysSafe !== undefined) updates.daysSafe = increment(stats.daysSafe);
 
-      await updateDoc(doc(db, 'users', userId), updates);
+      await updateDoc(doc(firestore, 'users', userId), updates);
     } catch (error) {
       console.error('Error updating user stats:', error);
       throw error;
@@ -64,7 +79,7 @@ export class UserService {
 
   static async updateUserAllergens(userId: string, allergens: string[]): Promise<void> {
     try {
-      await updateDoc(doc(db, 'users', userId), {
+      await updateDoc(doc(firestore, 'users', userId), {
         allergens: allergens
       });
     } catch (error) {
@@ -79,7 +94,7 @@ export class UserService {
     hapticFeedback?: boolean;
   }): Promise<void> {
     try {
-      await updateDoc(doc(db, 'users', userId), {
+      await updateDoc(doc(firestore, 'users', userId), {
         settings: settings
       });
     } catch (error) {
@@ -90,7 +105,7 @@ export class UserService {
 
   static async updateUserData(userId: string, data: Partial<UserData> & { [key: string]: any }): Promise<void> {
     try {
-      await updateDoc(doc(db, 'users', userId), data);
+      await updateDoc(doc(firestore, 'users', userId), data);
     } catch (error) {
       console.error('Error updating user data:', error);
       throw error;
@@ -99,24 +114,46 @@ export class UserService {
 
   static async getRecentScans(userId: string): Promise<any[]> {
     try {
-      const scansRef = collection(db, 'users', userId, 'scans');
+      console.log('getRecentScans: firestore instance:', firestore);
+      console.log('getRecentScans: userId:', userId);
+      
+      // Use the correct syntax for subcollections
+      const scansRef = collection(firestore, 'users', userId, 'scans');
+      console.log('getRecentScans: scansRef:', scansRef);
+      
       const q = query(scansRef, orderBy('scanDate', 'desc'), limit(5));
       const querySnapshot = await getDocs(q);
       return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
       console.error('Error fetching recent scans:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
       return [];
     }
   }
 
   static async getScanHistory(userId: string): Promise<any[]> {
     try {
-      const scansRef = collection(db, 'users', userId, 'scans');
+      console.log('getScanHistory: firestore instance:', firestore);
+      console.log('getScanHistory: userId:', userId);
+      
+      // Use the correct syntax for subcollections
+      const scansRef = collection(firestore, 'users', userId, 'scans');
+      console.log('getScanHistory: scansRef:', scansRef);
+      
       const q = query(scansRef, orderBy('scanDate', 'desc'));
       const querySnapshot = await getDocs(q);
       return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
       console.error('Error fetching scan history:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
       return [];
     }
   }
@@ -133,7 +170,7 @@ export class UserService {
         updates.safeFoods = increment(1);
       }
 
-      await updateDoc(doc(db, 'users', userId), updates);
+      await updateDoc(doc(firestore, 'users', userId), updates);
     } catch (error) {
       console.error('Error adding scan result:', error);
       throw error;
@@ -142,7 +179,8 @@ export class UserService {
 
   static async saveScanToHistory(userId: string, scanData: any): Promise<void> {
     try {
-      const scansRef = collection(db, 'users', userId, 'scans');
+      // Use the correct syntax for subcollections
+      const scansRef = collection(firestore, 'users', userId, 'scans');
       await addDoc(scansRef, {
         ...scanData,
         createdAt: new Date().toISOString(),

@@ -6,13 +6,13 @@ import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import SplashScreen from '../components/SplashScreen';
 
 function RootLayoutContent() {
-  const { user, loading, userDataLoading } = useAuth();
+  const { user, loading, userDataLoading, networkOffline } = useAuth();
   useFrameworkReady();
 
   // Show splash screen while loading auth state or user data
   if (loading || (user && userDataLoading)) {
     const message = loading ? "Initializing..." : "Loading your data...";
-    return <SplashScreen message={message} />;
+    return <SplashScreen message={message} networkOffline={networkOffline} />;
   }
 
   return (

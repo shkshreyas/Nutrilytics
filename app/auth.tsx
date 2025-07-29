@@ -19,7 +19,7 @@ import { router } from 'expo-router';
 import { Colors, GlobalStyles } from '../theme';
 
 export default function AuthScreen() {
-  const { signIn, signUp, checkEmailExists, googleSignIn } = useAuth();
+  const { signIn, signUp, checkEmailExists } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -85,18 +85,6 @@ export default function AuthScreen() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
-    try {
-      await googleSignIn();
-      // Navigation will be handled automatically by the app layout
-    } catch (error: any) {
-      Alert.alert('Google Sign In Failed', error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const goBack = () => {
     if (step === 'password' || step === 'signup') {
       setStep('email');
@@ -143,28 +131,6 @@ export default function AuthScreen() {
           ) : (
             <Text style={styles.primaryButtonText}>Continue</Text>
           )}
-        </LinearGradient>
-      </TouchableOpacity>
-
-      <View style={styles.divider}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>or</Text>
-        <View style={styles.dividerLine} />
-      </View>
-
-      <TouchableOpacity
-        style={styles.googleButton}
-        onPress={handleGoogleSignIn}
-        disabled={loading}
-        activeOpacity={0.8}
-      >
-        <LinearGradient
-          colors={["#FFFFFF", "#F8FAFC"]}
-          style={styles.googleButtonGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <Text style={styles.googleButtonText}>Continue with Google</Text>
         </LinearGradient>
       </TouchableOpacity>
     </View>

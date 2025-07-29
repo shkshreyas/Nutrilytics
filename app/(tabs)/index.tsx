@@ -6,19 +6,26 @@ import { useAuth } from '../../contexts/AuthContext';
 import { UserService } from '../../services/userService';
 import { useEffect, useState } from 'react';
 import { Colors, GlobalStyles } from '../../theme';
+import SplashScreen from '../../components/SplashScreen';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
-  const { user } = useAuth();
+  const { user, userDataLoading } = useAuth();
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      loadUserData();
+    if (!user) {
+      router.replace('/auth');
+      return;
     }
+    loadUserData();
   }, [user]);
+
+  if (userDataLoading) {
+    return <SplashScreen message="Loading your data..." />;
+  }
 
   const loadUserData = async () => {
     try {

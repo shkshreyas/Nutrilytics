@@ -1,5 +1,3 @@
-import { app } from '../lib/firebase';
-
 // For now, we'll use a mock AI service until Firebase AI Logic is fully available
 // This simulates the AI analysis functionality
 

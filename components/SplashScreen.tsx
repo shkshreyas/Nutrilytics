@@ -5,9 +5,10 @@ import { Colors } from '../theme';
 
 interface SplashScreenProps {
   message?: string;
+  networkOffline?: boolean;
 }
 
-export default function SplashScreen({ message = "Loading..." }: SplashScreenProps) {
+export default function SplashScreen({ message = "Loading...", networkOffline = false }: SplashScreenProps) {
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -23,7 +24,7 @@ export default function SplashScreen({ message = "Loading..." }: SplashScreenPro
           />
           <Text style={styles.title}>NutriLytics</Text>
           <Text style={styles.subtitle}>Smart Food Safety</Text>
-          <Text style={styles.message}>{message}</Text>
+          <Text style={styles.message}>{networkOffline ? 'Waiting for internet connection...' : message}</Text>
         </View>
       </LinearGradient>
     </View>

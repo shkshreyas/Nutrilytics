@@ -1,37 +1,35 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, type Auth } from "firebase/auth";
-import { getFirestore, type Firestore } from "firebase/firestore";
-import { getAnalytics, type Analytics } from "firebase/analytics";
-
+import { initializeAuth, getReactNativePersistence } from "firebase/auth";
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyD4peBdfBdffCQdd4Ng-4at95i9f8KV6FQ",
-  authDomain: "nutrilytics-18a2b.firebaseapp.com",
-  projectId: "nutrilytics-18a2b",
-  storageBucket: "nutrilytics-18a2b.firebasestorage.app",
-  messagingSenderId: "305030381271",
-  appId: "1:305030381271:web:cafce146b4d6dabf0a3a92",
-  measurementId: "G-D41SYR2W13"
+const config = {
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const app = initializeApp(config);
 
-// Initialize Auth (will use default persistence)
-const auth: Auth = getAuth(app);
+// Initialize Firebase Authentication with AsyncStorage persistence
+const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage)
+});
 
-// Initialize Firestore
-const db: Firestore = getFirestore(app);
+// Initialize Cloud Firestore and get a reference to the service
+const firestore = getFirestore(app);
 
-// Initialize Analytics (only for web platforms)
-let analytics: Analytics | null = null;
-if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-  try {
-    analytics = getAnalytics(app);
-  } catch (error) {
-    console.log('Analytics not supported in this environment');
-  }
+// Add error handling for Firestore initialization
+if (!firestore) {
+  console.error('Firestore failed to initialize');
+} else {
+  console.log('Firestore initialized successfully');
 }
 
-export { app, auth, db, analytics };
+export { auth, firestore, app };

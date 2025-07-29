@@ -1,5 +1,5 @@
 import { collection, addDoc, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { firestore } from '../lib/firebase';
 
 export interface FoodItem {
   id?: string;
@@ -29,8 +29,8 @@ export interface NutritionHistory {
 }
 
 class FoodDataService {
-  private foodCollection = collection(db, 'foods');
-  private historyCollection = collection(db, 'nutritionHistory');
+  private foodCollection = collection(firestore, 'foods');
+  private historyCollection = collection(firestore, 'nutritionHistory');
 
   // Add a new food item to the database
   async addFood(food: FoodItem): Promise<string> {

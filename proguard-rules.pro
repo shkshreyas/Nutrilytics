@@ -12,6 +12,20 @@
 -keepattributes Signature
 -keepattributes *Annotation*
 
+# React Native Firebase (explicit)
+-keep class io.invertase.firebase.** { *; }
+-dontwarn io.invertase.firebase.**
+
+# Google Sign-In
+-keep class com.google.android.gms.auth.api.signin.** { *; }
+-keep class com.google.android.gms.common.api.** { *; }
+-keep class com.google.android.gms.tasks.** { *; }
+
+# Keep Gson (used by Firebase and others)
+-keep class com.google.gson.** { *; }
+-keepattributes Signature
+-keepattributes *Annotation*
+
 # Keep Expo modules
 -keep class expo.modules.** { *; }
 -keep class expo.modules.notifications.** { *; }
