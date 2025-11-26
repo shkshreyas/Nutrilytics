@@ -1,9 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity, ScrollView, Image } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  Alert,
+} from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
 import { UserService } from '../services/userService';
-import { theme } from '../theme';
+
 
 const { width, height } = Dimensions.get('window');
 
@@ -19,36 +28,40 @@ interface OnboardingStep {
 const onboardingSteps: OnboardingStep[] = [
   {
     id: 1,
-    title: "Welcome to NutriLytics",
-    subtitle: "Your Food Safety Companion",
-    description: "Scan food items to instantly check for allergens and get detailed nutritional information to make informed dietary choices.",
-    image: "🔍",
-    backgroundColor: "#4CAF50"
+    title: 'Welcome to NutriLytics',
+    subtitle: 'Your Food Safety Companion',
+    description:
+      'Scan food items to instantly check for allergens and get detailed nutritional information to make informed dietary choices.',
+    image: '🔍',
+    backgroundColor: '#4CAF50',
   },
   {
     id: 2,
-    title: "Allergen Detection",
-    subtitle: "Stay Safe, Stay Informed",
-    description: "Our AI-powered scanner identifies common allergens like nuts, dairy, gluten, and more to help you avoid allergic reactions.",
-    image: "🛡️",
-    backgroundColor: "#FF9800"
+    title: 'Allergen Detection',
+    subtitle: 'Stay Safe, Stay Informed',
+    description:
+      'Our AI-powered scanner identifies common allergens like nuts, dairy, gluten, and more to help you avoid allergic reactions.',
+    image: '🛡️',
+    backgroundColor: '#FF9800',
   },
   {
     id: 3,
-    title: "Nutritional Insights",
-    subtitle: "Track Your Health",
-    description: "Get detailed nutritional breakdown including calories, protein, carbs, fats, and fiber to maintain a balanced diet.",
-    image: "📊",
-    backgroundColor: "#2196F3"
+    title: 'Nutritional Insights',
+    subtitle: 'Track Your Health',
+    description:
+      'Get detailed nutritional breakdown including calories, protein, carbs, fats, and fiber to maintain a balanced diet.',
+    image: '📊',
+    backgroundColor: '#2196F3',
   },
   {
     id: 4,
-    title: "Personalized Experience",
-    subtitle: "Your Health, Your Way",
-    description: "Set your allergens, track your scan history, and get personalized recommendations based on your dietary preferences.",
-    image: "👤",
-    backgroundColor: "#9C27B0"
-  }
+    title: 'Personalized Experience',
+    subtitle: 'Your Health, Your Way',
+    description:
+      'Set your allergens, track your scan history, and get personalized recommendations based on your dietary preferences.',
+    image: '👤',
+    backgroundColor: '#9C27B0',
+  },
 ];
 
 export default function OnboardingScreen() {
@@ -57,8 +70,16 @@ export default function OnboardingScreen() {
   const { user, userData, refreshUserData } = useAuth();
 
   const commonAllergens = [
-    "Peanuts", "Tree Nuts", "Milk", "Eggs", "Soy", 
-    "Wheat", "Fish", "Shellfish", "Gluten", "Lactose"
+    'Peanuts',
+    'Tree Nuts',
+    'Milk',
+    'Eggs',
+    'Soy',
+    'Wheat',
+    'Fish',
+    'Shellfish',
+    'Gluten',
+    'Lactose',
   ];
 
   const handleNext = () => {
@@ -74,9 +95,9 @@ export default function OnboardingScreen() {
   };
 
   const toggleAllergen = (allergen: string) => {
-    setAllergens(prev => 
-      prev.includes(allergen) 
-        ? prev.filter(a => a !== allergen)
+    setAllergens((prev) =>
+      prev.includes(allergen)
+        ? prev.filter((a) => a !== allergen)
         : [...prev, allergen]
     );
   };
@@ -86,23 +107,31 @@ export default function OnboardingScreen() {
       if (user?.uid) {
         // Update user data with allergens and mark onboarding as complete
         await UserService.updateUserAllergens(user.uid, allergens);
-        await UserService.updateUserData(user.uid, { 
-          onboardingCompleted: true,
-          onboardingCompletedAt: new Date()
+        await UserService.updateUserData(user.uid, {
+          onboardingCompleted: false, // Keep it false until tutorial is completed
+          onboardingStartedAt: new Date(),
         });
         await refreshUserData();
-        router.replace('/tutorial');
+        router.replace('/tutorial'); // Always go to tutorial after onboarding
       }
     } catch (error) {
       console.error('Error completing onboarding:', error);
-      router.replace('/tutorial');
+      Alert.alert(
+        'Error',
+        'Failed to save your preferences. Please try again.'
+      );
     }
   };
 
   const currentStepData = onboardingSteps[currentStep];
 
   return (
-    <View style={[styles.container, { backgroundColor: currentStepData.backgroundColor }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: currentStepData.backgroundColor },
+      ]}
+    >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Progress Indicator */}
         <View style={styles.progressContainer}>
@@ -111,7 +140,7 @@ export default function OnboardingScreen() {
               key={index}
               style={[
                 styles.progressDot,
-                index === currentStep && styles.progressDotActive
+                index === currentStep && styles.progressDotActive,
               ]}
             />
           ))}
@@ -139,14 +168,18 @@ export default function OnboardingScreen() {
                     key={allergen}
                     style={[
                       styles.allergenChip,
-                      allergens.includes(allergen) && styles.allergenChipSelected
+                      allergens.includes(allergen) &&
+                        styles.allergenChipSelected,
                     ]}
                     onPress={() => toggleAllergen(allergen)}
                   >
-                    <Text style={[
-                      styles.allergenChipText,
-                      allergens.includes(allergen) && styles.allergenChipTextSelected
-                    ]}>
+                    <Text
+                      style={[
+                        styles.allergenChipText,
+                        allergens.includes(allergen) &&
+                          styles.allergenChipTextSelected,
+                      ]}
+                    >
                       {allergen}
                     </Text>
                   </TouchableOpacity>
@@ -159,12 +192,11 @@ export default function OnboardingScreen() {
 
       {/* Navigation */}
       <View style={styles.navigation}>
-        <TouchableOpacity
-          style={styles.nextButton}
-          onPress={handleNext}
-        >
+        <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
           <Text style={styles.nextButtonText}>
-            {currentStep === onboardingSteps.length - 1 ? 'Get Started' : 'Next'}
+            {currentStep === onboardingSteps.length - 1
+              ? 'Get Started'
+              : 'Next'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -291,4 +323,4 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-}); 
+});

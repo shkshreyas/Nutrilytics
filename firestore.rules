@@ -1,0 +1,76 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns the resource
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Users can read and write their own data
+      allow read, write: if isOwner(userId);
+      
+      // Subscription subcollection
+      match /subscription/{document} {
+        // Users can read their subscription data
+        allow read: if isOwner(userId);
+        // Only Cloud Functions can write subscription data
+        allow write: if false;
+      }
+      
+      // Usage subcollection
+      match /usage/{document} {
+        // Users can read their usage data
+        allow read: if isOwner(userId);
+        // Users can increment their usage (for client-side tracking)
+        allow update: if isOwner(userId) && 
+          request.resource.data.keys().hasOnly(['barcodeScansToday', 'photoScansToday', 'aiMessagesToday', 'updatedAt']);
+        // Cloud Functions can write usage data
+        allow create: if false;
+      }
+      
+      // Conversations subcollection
+      match /conversations/{conversationId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Meal plans subcollection
+      match /mealPlans/{planId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Food history subcollection
+      match /foodHistory/{scanId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Notifications subcollection
+      match /notifications/{notificationId} {
+        allow read: if isOwner(userId);
+        allow update: if isOwner(userId) && 
+          request.resource.data.keys().hasOnly(['read', 'readAt']);
+        // Only Cloud Functions can create notifications
+        allow create, delete: if false;
+      }
+    }
+    
+    // Analytics collection (read-only for admins, write-only for Cloud Functions)
+    match /analytics/{document=**} {
+      allow read: if false; // Only accessible via Cloud Functions
+      allow write: if false; // Only Cloud Functions can write
+    }
+    
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

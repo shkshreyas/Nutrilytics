@@ -54,7 +54,8 @@ export default function AuthScreen() {
     setLoading(true);
     try {
       await signIn(email, password);
-      // Navigation will be handled automatically by the app layout
+      // The layout will automatically handle navigation to onboarding or main app
+      // based on onboardingCompleted flag in user data
     } catch (error: any) {
       Alert.alert('Sign In Failed', error.message);
     } finally {
@@ -64,19 +65,25 @@ export default function AuthScreen() {
 
   const handleSignUp = async () => {
     if (!name.trim() || !password || password.length < 6) {
-      Alert.alert('Invalid Input', 'Please fill all fields and ensure password is at least 6 characters');
+      Alert.alert(
+        'Invalid Input',
+        'Please fill all fields and ensure password is at least 6 characters'
+      );
       return;
     }
 
     setLoading(true);
     try {
       await signUp(email, password, name.trim());
-      // Navigation will be handled automatically by the app layout
+      // The layout will automatically handle navigation to onboarding
     } catch (error: any) {
       if (error.code === 'auth/email-already-in-use') {
         setStep('password');
         setEmailExists(true);
-        Alert.alert('Email Already Registered', 'This email is already registered. Please enter your password to log in.');
+        Alert.alert(
+          'Email Already Registered',
+          'This email is already registered. Please enter your password to log in.'
+        );
       } else {
         Alert.alert('Sign Up Failed', error.message);
       }
@@ -100,7 +107,7 @@ export default function AuthScreen() {
       </View>
       <Text style={styles.title}>Welcome to NutriLytics</Text>
       <Text style={styles.subtitle}>Enter your email to get started</Text>
-      
+
       <View style={styles.inputContainer}>
         <Mail size={20} color="#6B7280" style={styles.inputIcon} />
         <TextInput
@@ -138,7 +145,11 @@ export default function AuthScreen() {
 
   const renderPasswordStep = () => (
     <View style={styles.stepContainer}>
-      <TouchableOpacity style={styles.backButton} onPress={goBack} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={goBack}
+        activeOpacity={0.7}
+      >
         <View style={styles.backButtonContainer}>
           <ArrowLeft size={20} color="#6B7280" />
         </View>
@@ -149,7 +160,7 @@ export default function AuthScreen() {
       </View>
       <Text style={styles.title}>Welcome Back!</Text>
       <Text style={styles.subtitle}>Enter your password to sign in</Text>
-      
+
       <View style={styles.inputContainer}>
         <Lock size={20} color="#6B7280" style={styles.inputIcon} />
         <TextInput
@@ -186,7 +197,11 @@ export default function AuthScreen() {
 
   const renderSignUpStep = () => (
     <View style={styles.stepContainer}>
-      <TouchableOpacity style={styles.backButton} onPress={goBack} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={goBack}
+        activeOpacity={0.7}
+      >
         <View style={styles.backButtonContainer}>
           <ArrowLeft size={20} color="#6B7280" />
         </View>
@@ -197,7 +212,7 @@ export default function AuthScreen() {
       </View>
       <Text style={styles.title}>Create Account</Text>
       <Text style={styles.subtitle}>Set up your profile to get started</Text>
-      
+
       <View style={styles.inputContainer}>
         <User size={20} color="#6B7280" style={styles.inputIcon} />
         <TextInput
@@ -244,46 +259,92 @@ export default function AuthScreen() {
   );
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: Colors.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <LinearGradient
         colors={Colors.gradient}
-        style={{ paddingTop: 64, paddingBottom: 32, paddingHorizontal: 24, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, alignItems: 'center' }}
+        style={{
+          paddingTop: 64,
+          paddingBottom: 32,
+          paddingHorizontal: 24,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          alignItems: 'center',
+        }}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <Image source={require('../assets/images/icon.png')} style={{ width: 64, height: 64, marginBottom: 12 }} />
-        <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#FFF', marginBottom: 4 }}>NutriLytics</Text>
-        <Text style={{ fontSize: 16, color: '#FFF', opacity: 0.9, marginBottom: 8 }}>Smart Food Safety</Text>
+        <Image
+          source={require('../assets/images/icon.png')}
+          style={{ width: 64, height: 64, marginBottom: 12 }}
+        />
+        <Text
+          style={{
+            fontSize: 28,
+            fontWeight: 'bold',
+            color: '#FFF',
+            marginBottom: 4,
+          }}
+        >
+          NutriLytics
+        </Text>
+        <Text
+          style={{ fontSize: 16, color: '#FFF', opacity: 0.9, marginBottom: 8 }}
+        >
+          Smart Food Safety
+        </Text>
       </LinearGradient>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }} keyboardShouldPersistTaps="handled">
-        <View style={{ width: '100%', maxWidth: 400, backgroundColor: Colors.card, borderRadius: 24, padding: 28, marginTop: -48, shadowColor: Colors.shadow, shadowOpacity: 0.12, shadowRadius: 16, elevation: 4 }}>
+      <ScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 24,
+        }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View
+          style={{
+            width: '100%',
+            maxWidth: 400,
+            backgroundColor: Colors.card,
+            borderRadius: 24,
+            padding: 28,
+            marginTop: -48,
+            shadowColor: Colors.shadow,
+            shadowOpacity: 0.12,
+            shadowRadius: 16,
+            elevation: 4,
+          }}
+        >
           {step === 'email' && renderEmailStep()}
           {step === 'password' && renderPasswordStep()}
           {step === 'signup' && renderSignUpStep()}
         </View>
         <View style={{ marginTop: 24, alignItems: 'center' }}>
           {step === 'password' && (
-            <TouchableOpacity 
-              style={styles.navigationLink} 
+            <TouchableOpacity
+              style={styles.navigationLink}
               onPress={() => setStep('signup')}
               activeOpacity={0.7}
             >
               <Text style={styles.navigationLinkText}>
-                Don't have an account? <Text style={styles.navigationLinkHighlight}>Sign up</Text>
+                Don't have an account?{' '}
+                <Text style={styles.navigationLinkHighlight}>Sign up</Text>
               </Text>
             </TouchableOpacity>
           )}
           {step === 'signup' && (
-            <TouchableOpacity 
-              style={styles.navigationLink} 
+            <TouchableOpacity
+              style={styles.navigationLink}
               onPress={() => setStep('email')}
               activeOpacity={0.7}
             >
               <Text style={styles.navigationLinkText}>
-                Already have an account? <Text style={styles.navigationLinkHighlight}>Sign in</Text>
+                Already have an account?{' '}
+                <Text style={styles.navigationLinkHighlight}>Sign in</Text>
               </Text>
             </TouchableOpacity>
           )}
@@ -442,4 +503,4 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textDecorationLine: 'underline',
   },
-}); 
+});

@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getVertexAI } from "@firebase/ai";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Your web app's Firebase configuration
@@ -23,4 +24,7 @@ const auth = getAuth(app);
 // Initialize Cloud Firestore and get a reference to the service
 const db = getFirestore(app);
 
-export { app, auth, db };
+// Initialize Vertex AI for Gemini
+const vertexAI = getVertexAI(app);
+
+export { app, auth, db, vertexAI };

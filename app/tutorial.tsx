@@ -1,7 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Dimensions,
+  Alert,
+} from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAuth } from '../contexts/AuthContext';
+import { UserService } from '../services/userService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -16,43 +26,49 @@ interface TutorialStep {
 const tutorialSteps: TutorialStep[] = [
   {
     id: 1,
-    title: "Scan Food Items",
-    description: "Point your camera at any food item's barcode or packaging to instantly get allergen and nutritional information.",
-    icon: "📱",
-    backgroundColor: "#4CAF50"
+    title: 'Scan Food Items',
+    description:
+      "Point your camera at any food item's barcode or packaging to instantly get allergen and nutritional information.",
+    icon: '📱',
+    backgroundColor: '#4CAF50',
   },
   {
     id: 2,
-    title: "Check Allergens",
-    description: "The app will highlight any allergens that match your profile and show you exactly what to avoid.",
-    icon: "⚠️",
-    backgroundColor: "#FF9800"
+    title: 'Check Allergens',
+    description:
+      'The app will highlight any allergens that match your profile and show you exactly what to avoid.',
+    icon: '⚠️',
+    backgroundColor: '#FF9800',
   },
   {
     id: 3,
-    title: "View Nutrition",
-    description: "Get detailed nutritional breakdown including calories, protein, carbs, fats, and fiber content.",
-    icon: "📊",
-    backgroundColor: "#2196F3"
+    title: 'View Nutrition',
+    description:
+      'Get detailed nutritional breakdown including calories, protein, carbs, fats, and fiber content.',
+    icon: '📊',
+    backgroundColor: '#2196F3',
   },
   {
     id: 4,
-    title: "Track History",
-    description: "Review your scan history and track your dietary patterns over time in the History tab.",
-    icon: "📈",
-    backgroundColor: "#9C27B0"
+    title: 'Track History',
+    description:
+      'Review your scan history and track your dietary patterns over time in the History tab.',
+    icon: '📈',
+    backgroundColor: '#9C27B0',
   },
   {
     id: 5,
-    title: "Manage Profile",
-    description: "Update your allergens, view your stats, and customize your experience in the Profile tab.",
-    icon: "👤",
-    backgroundColor: "#607D8B"
-  }
+    title: 'Manage Profile',
+    description:
+      'Update your allergens, view your stats, and customize your experience in the Profile tab.',
+    icon: '👤',
+    backgroundColor: '#607D8B',
+  },
 ];
 
 export default function TutorialScreen() {
   const [currentStep, setCurrentStep] = useState(0);
+  const { user, refreshUserData } = useAuth();
 
   const handleNext = () => {
     if (currentStep < tutorialSteps.length - 1) {
@@ -66,15 +82,31 @@ export default function TutorialScreen() {
     completeTutorial();
   };
 
-  const completeTutorial = () => {
-    router.replace('/(tabs)');
+  const completeTutorial = async () => {
+    try {
+      if (user?.uid) {
+        await UserService.updateUserData(user.uid, {
+          onboardingCompleted: true,
+          tutorialCompleted: true,
+          tutorialCompletedAt: new Date(),
+        });
+        await refreshUserData();
+        router.replace('/(tabs)');
+      }
+    } catch (error) {
+      console.error('Error completing tutorial:', error);
+      Alert.alert('Error', 'Failed to save your progress. Please try again.');
+    }
   };
 
   const currentStepData = tutorialSteps[currentStep];
 
   return (
     <LinearGradient
-      colors={[currentStepData.backgroundColor, currentStepData.backgroundColor + '80']}
+      colors={[
+        currentStepData.backgroundColor,
+        currentStepData.backgroundColor + '80',
+      ]}
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -85,7 +117,7 @@ export default function TutorialScreen() {
               key={index}
               style={[
                 styles.progressDot,
-                index === currentStep && styles.progressDotActive
+                index === currentStep && styles.progressDotActive,
               ]}
             />
           ))}
@@ -107,37 +139,65 @@ export default function TutorialScreen() {
             <Text style={styles.tipsTitle}>Pro Tips:</Text>
             {currentStep === 0 && (
               <View style={styles.tip}>
-                <Text style={styles.tipText}>• Hold your phone steady for better scanning</Text>
-                <Text style={styles.tipText}>• Works with most packaged foods</Text>
-                <Text style={styles.tipText}>• Try scanning from different angles if needed</Text>
+                <Text style={styles.tipText}>
+                  • Hold your phone steady for better scanning
+                </Text>
+                <Text style={styles.tipText}>
+                  • Works with most packaged foods
+                </Text>
+                <Text style={styles.tipText}>
+                  • Try scanning from different angles if needed
+                </Text>
               </View>
             )}
             {currentStep === 1 && (
               <View style={styles.tip}>
-                <Text style={styles.tipText}>• Red highlights indicate allergens</Text>
-                <Text style={styles.tipText}>• Green means safe to consume</Text>
-                <Text style={styles.tipText}>• Always double-check with ingredient lists</Text>
+                <Text style={styles.tipText}>
+                  • Red highlights indicate allergens
+                </Text>
+                <Text style={styles.tipText}>
+                  • Green means safe to consume
+                </Text>
+                <Text style={styles.tipText}>
+                  • Always double-check with ingredient lists
+                </Text>
               </View>
             )}
             {currentStep === 2 && (
               <View style={styles.tip}>
-                <Text style={styles.tipText}>• Track your daily nutritional goals</Text>
-                <Text style={styles.tipText}>• Compare different food options</Text>
-                <Text style={styles.tipText}>• Use this data for meal planning</Text>
+                <Text style={styles.tipText}>
+                  • Track your daily nutritional goals
+                </Text>
+                <Text style={styles.tipText}>
+                  • Compare different food options
+                </Text>
+                <Text style={styles.tipText}>
+                  • Use this data for meal planning
+                </Text>
               </View>
             )}
             {currentStep === 3 && (
               <View style={styles.tip}>
-                <Text style={styles.tipText}>• Review your eating patterns</Text>
-                <Text style={styles.tipText}>• Track allergen exposure over time</Text>
-                <Text style={styles.tipText}>• Export data for healthcare providers</Text>
+                <Text style={styles.tipText}>
+                  • Review your eating patterns
+                </Text>
+                <Text style={styles.tipText}>
+                  • Track allergen exposure over time
+                </Text>
+                <Text style={styles.tipText}>
+                  • Export data for healthcare providers
+                </Text>
               </View>
             )}
             {currentStep === 4 && (
               <View style={styles.tip}>
                 <Text style={styles.tipText}>• Update allergens as needed</Text>
-                <Text style={styles.tipText}>• View your safety statistics</Text>
-                <Text style={styles.tipText}>• Customize notification preferences</Text>
+                <Text style={styles.tipText}>
+                  • View your safety statistics
+                </Text>
+                <Text style={styles.tipText}>
+                  • Customize notification preferences
+                </Text>
               </View>
             )}
           </View>
@@ -146,12 +206,11 @@ export default function TutorialScreen() {
 
       {/* Navigation */}
       <View style={styles.navigation}>
-        <TouchableOpacity
-          style={styles.nextButton}
-          onPress={handleNext}
-        >
+        <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
           <Text style={styles.nextButtonText}>
-            {currentStep === tutorialSteps.length - 1 ? 'Start Using App' : 'Next'}
+            {currentStep === tutorialSteps.length - 1
+              ? 'Start Using App'
+              : 'Next'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -257,4 +316,4 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-}); 
+});

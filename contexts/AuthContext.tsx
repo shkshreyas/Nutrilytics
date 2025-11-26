@@ -2,8 +2,15 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, firestore } from '../lib/firebase';
 import { Platform } from 'react-native';
 import * as Network from 'expo-network';
-import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, fetchSignInMethodsForEmail } from 'firebase/auth';
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  fetchSignInMethodsForEmail,
+} from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { SubscriptionService } from '../services/subscriptionService';
 
 interface AuthContextType {
   user: any;
@@ -11,12 +18,14 @@ interface AuthContextType {
   loading: boolean;
   userDataLoading: boolean;
   networkOffline: boolean;
+  isPremium: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signOutUser: () => Promise<void>;
   checkEmailExists: (email: string) => Promise<boolean>;
   refreshUserData: () => Promise<void>;
   needsOnboarding: boolean;
+  setNeedsOnboarding: (value: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,6 +36,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [userDataLoading, setUserDataLoading] = useState(false);
   const [networkOffline, setNetworkOffline] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(true);
+  const [isPremium, setIsPremium] = useState(false);
+  const subscriptionService = SubscriptionService.getInstance();
 
   useEffect(() => {
     const checkNetworkAndAuth = async () => {
@@ -58,7 +70,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserDataLoading(true);
       const userDoc = await getDoc(doc(firestore, 'users', uid));
       if (userDoc.exists()) {
-        setUserData(userDoc.data());
+        const data = userDoc.data();
+        setUserData(data);
+        // Always show onboarding on sign in
+        setNeedsOnboarding(true);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -75,7 +90,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const userDoc = await getDoc(
+        doc(firestore, 'users', userCredential.user.uid)
+      );
+
+      // Always set needs onboarding to true on sign in
+      setNeedsOnboarding(true);
+
+      // If user doc doesn't exist, create it
+      if (!userDoc.exists()) {
+        setNeedsOnboarding(true);
+      }
     } catch (error: any) {
       console.error('Sign in error:', error);
       throw error;
@@ -84,7 +114,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       await setDoc(doc(firestore, 'users', userCredential.user.uid), {
         email: email,
         name: name,
@@ -93,7 +127,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         allergensFound: 0,
         safeFoods: 0,
         daysSafe: 0,
+        onboardingCompleted: false,
+        settings: {
+          notifications: true,
+          autoScan: false,
+        },
+        allergens: [],
+        avatar: '😀',
       });
+      // Set needs onboarding for new users
+      setNeedsOnboarding(true);
     } catch (error: any) {
       console.error('Sign up error:', error);
       throw error;
@@ -119,6 +162,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const checkSubscriptionStatus = async () => {
+    if (user?.uid) {
+      const hasSubscription =
+        await subscriptionService.checkSubscriptionStatus();
+      setIsPremium(hasSubscription);
+    } else {
+      setIsPremium(false);
+    }
+  };
+
+  // Check subscription status whenever user data changes
+  useEffect(() => {
+    if (user) {
+      checkSubscriptionStatus();
+    }
+  }, [user, userData]);
+
   const value = {
     user,
     userData,
@@ -130,14 +190,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOutUser,
     checkEmailExists,
     refreshUserData,
-    needsOnboarding: user && userData && !userData.onboardingCompleted,
+    needsOnboarding,
+    setNeedsOnboarding,
+    isPremium,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
@@ -146,4 +204,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-} 
+}

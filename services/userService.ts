@@ -10,6 +10,9 @@ export interface UserData {
   safeFoods: number;
   daysSafe: number;
   allergens?: string[];
+  healthGoal?: 'weight_loss' | 'muscle_gain' | 'maintenance';
+  dietaryPreferences?: string[];
+  language?: string;
 }
 
 export class UserService {
@@ -18,12 +21,12 @@ export class UserService {
       console.log('getUserData: firestore instance:', firestore);
       console.log('getUserData: firestore type:', typeof firestore);
       console.log('getUserData: firestore constructor:', firestore.constructor.name);
-      
+
       // Test if firestore is properly initialized
       if (!firestore) {
         throw new Error('Firestore instance is null or undefined');
       }
-      
+
       const userDoc = await getDoc(doc(firestore, 'users', userId));
       if (userDoc.exists()) {
         return userDoc.data() as UserData;
@@ -112,15 +115,48 @@ export class UserService {
     }
   }
 
+  static async updateHealthGoal(userId: string, healthGoal: 'weight_loss' | 'muscle_gain' | 'maintenance'): Promise<void> {
+    try {
+      await updateDoc(doc(firestore, 'users', userId), {
+        healthGoal: healthGoal
+      });
+    } catch (error) {
+      console.error('Error updating health goal:', error);
+      throw error;
+    }
+  }
+
+  static async updateDietaryPreferences(userId: string, preferences: string[]): Promise<void> {
+    try {
+      await updateDoc(doc(firestore, 'users', userId), {
+        dietaryPreferences: preferences
+      });
+    } catch (error) {
+      console.error('Error updating dietary preferences:', error);
+      throw error;
+    }
+  }
+
+  static async updateLanguage(userId: string, language: string): Promise<void> {
+    try {
+      await updateDoc(doc(firestore, 'users', userId), {
+        language: language
+      });
+    } catch (error) {
+      console.error('Error updating language:', error);
+      throw error;
+    }
+  }
+
   static async getRecentScans(userId: string): Promise<any[]> {
     try {
       console.log('getRecentScans: firestore instance:', firestore);
       console.log('getRecentScans: userId:', userId);
-      
+
       // Use the correct syntax for subcollections
       const scansRef = collection(firestore, 'users', userId, 'scans');
       console.log('getRecentScans: scansRef:', scansRef);
-      
+
       const q = query(scansRef, orderBy('scanDate', 'desc'), limit(5));
       const querySnapshot = await getDocs(q);
       return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -139,11 +175,11 @@ export class UserService {
     try {
       console.log('getScanHistory: firestore instance:', firestore);
       console.log('getScanHistory: userId:', userId);
-      
+
       // Use the correct syntax for subcollections
       const scansRef = collection(firestore, 'users', userId, 'scans');
       console.log('getScanHistory: scansRef:', scansRef);
-      
+
       const q = query(scansRef, orderBy('scanDate', 'desc'));
       const querySnapshot = await getDocs(q);
       return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));

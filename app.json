@@ -1,5 +1,6 @@
 {
   "expo": {
+    "sdkVersion": "54.0.0",
     "name": "Nutrilytics",
     "slug": "nutrilytics",
     "version": "1.0.0",
@@ -47,9 +48,9 @@
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.SCHEDULE_EXACT_ALARM",
-        "android.permission.POST_NOTIFICATIONS"
+        "android.permission.POST_NOTIFICATIONS",
+        "com.android.vending.BILLING"
       ],
-
       "playStoreUrl": "https://play.google.com/store/apps/details?id=shk.health.nutrilytics"
     },
     "web": {
@@ -60,6 +61,18 @@
     "plugins": [
       "expo-router",
       "expo-font",
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProGuard": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "enableMinifyInReleaseBuilds": true,
+            "useLegacyPackaging": true
+          }
+        }
+      ],
       [
         "expo-notifications",
         {
@@ -76,7 +89,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "6a17e40a-ecdd-45b3-81c4-04fb822a1c4d"
+        "projectId": "c6e2becd-0bd6-4fc2-9324-df2f79a6d69c"
       }
     }
   }

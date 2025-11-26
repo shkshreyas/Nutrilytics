@@ -1,19 +1,51 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Image, ColorValue } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+  Image,
+  ColorValue,
+  StatusBar,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Shield, Camera, Clock, TrendingUp, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle } from 'lucide-react-native';
+import {
+  Shield,
+  Camera,
+  Clock,
+  TrendingUp,
+  TriangleAlert as AlertTriangle,
+  CircleCheck as CheckCircle,
+  Lock,
+  ChevronRight,
+  Zap,
+} from 'lucide-react-native';
+import NutrientChart from '../../components/NutrientChart';
+import SubscriptionButton from '../../components/SubscriptionButton';
 import { router } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { UserService } from '../../services/userService';
 import { useEffect, useState } from 'react';
 import { Colors, GlobalStyles } from '../../theme';
 import SplashScreen from '../../components/SplashScreen';
+import { GlassmorphismCard } from '../../components/design-system/GlassmorphismCard';
+import StreakCounter from '../../components/StreakCounter';
+import { BlurView } from 'expo-blur';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
-  const { user, userDataLoading } = useAuth();
+  const { user, userDataLoading, isPremium } = useAuth();
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showChart, setShowChart] = useState(false);
+  const [streak, setStreak] = useState(3); // Mock streak for demo
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowChart(true), 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -41,38 +73,78 @@ export default function HomeScreen() {
   };
 
   const quickStats = [
-    { icon: Shield, label: 'Foods Scanned', value: userData?.foodsScanned?.toString() || '0', color: '#10B981' },
-    { icon: AlertTriangle, label: 'Allergens Found', value: userData?.allergensFound?.toString() || '0', color: '#F97316' },
-    { icon: CheckCircle, label: 'Safe Foods', value: userData?.safeFoods?.toString() || '0', color: '#059669' },
-    { icon: Clock, label: 'Days Safe', value: userData?.daysSafe?.toString() || '0', color: '#3B82F6' },
+    {
+      icon: Shield,
+      label: 'Foods Scanned',
+      value: userData?.foodsScanned?.toString() || '0',
+      color: Colors.primaryNeon,
+      bg: 'rgba(16, 185, 129, 0.1)',
+    },
+    {
+      icon: AlertTriangle,
+      label: 'Allergens',
+      value: userData?.allergensFound?.toString() || '0',
+      color: Colors.warning,
+      bg: 'rgba(249, 115, 22, 0.1)',
+    },
+    {
+      icon: CheckCircle,
+      label: 'Safe Foods',
+      value: userData?.safeFoods?.toString() || '0',
+      color: Colors.secondaryNeon,
+      bg: 'rgba(59, 130, 246, 0.1)',
+    },
+    {
+      icon: Clock,
+      label: 'Days Safe',
+      value: userData?.daysSafe?.toString() || '0',
+      color: Colors.accent,
+      bg: 'rgba(251, 191, 36, 0.1)',
+    },
   ];
 
   const [recentScans, setRecentScans] = useState<any[]>([]);
+  const [nutrientData, setNutrientData] = useState([
+    { nutrient: 'Protein', amount: 65, unit: 'g', recommended: 50 },
+    { nutrient: 'Carbs', amount: 275, unit: 'g', recommended: 300 },
+    { nutrient: 'Fats', amount: 55, unit: 'g', recommended: 65 },
+    { nutrient: 'Fiber', amount: 18, unit: 'g', recommended: 25 },
+    { nutrient: 'Sugar', amount: 35, unit: 'g', recommended: 25 },
+    { nutrient: 'Sodium', amount: 1800, unit: 'mg', recommended: 2300 },
+  ]);
 
   useEffect(() => {
     if (user) {
       loadUserData();
       loadRecentScans();
+      calculateNutrientData();
     }
   }, [user]);
+
+  const calculateNutrientData = async () => {
+    try {
+      if (user?.uid) {
+        const scans = await UserService.getScanHistory(user.uid);
+      }
+    } catch (error) {
+      console.error('Error calculating nutrient data:', error);
+    }
+  };
 
   const loadRecentScans = async () => {
     try {
       if (user?.uid) {
-        // Fetch real scan history from database
         const history = await UserService.getScanHistory(user.uid);
-        // Get the 3 most recent scans
-        const recent = history.slice(0, 3).map(scan => ({
+        const recent = history.slice(0, 3).map((scan) => ({
           name: scan.name,
           status: scan.status,
           allergens: scan.allergens,
-          time: formatTimeAgo(scan.scanDate)
+          time: formatTimeAgo(scan.scanDate),
         }));
         setRecentScans(recent);
       }
     } catch (error) {
       console.error('Error loading recent scans:', error);
-      // Show empty state if no scans
       setRecentScans([]);
     }
   };
@@ -91,98 +163,146 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <LinearGradient
-        colors={Colors.gradient as [ColorValue, ColorValue]}
-        style={[styles.header, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-          <Text style={{ fontSize: 40, marginRight: 10 }}>{userData?.avatar || '😀'}</Text>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text
-              style={styles.greeting}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              Good morning, {userData?.name || user?.displayName || 'User'}! 👋
-            </Text>
-            <Text style={styles.subtitle}>Keep your meals safe and healthy</Text>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+        {/* Header Section */}
+        <View style={styles.headerContainer}>
+          <LinearGradient
+            colors={Colors.backgroundGradient}
+            style={styles.headerBackground}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          />
+          <View style={styles.headerContent}>
+            <View>
+              <Text style={styles.greeting}>Hello, {userData?.name?.split(' ')[0] || 'Friend'}!</Text>
+              <Text style={styles.subtitle}>Ready to eat healthy today?</Text>
+            </View>
+            <StreakCounter streak={streak} />
           </View>
         </View>
-      </LinearGradient>
 
-      <View style={styles.content}>
-        <TouchableOpacity
-          style={[GlobalStyles.roundedButton, { backgroundColor: Colors.info, marginBottom: 30, elevation: 8, shadowColor: Colors.info }]}
-          onPress={() => router.push('/scan')}
-          activeOpacity={0.85}>
-          <LinearGradient
-            colors={Colors.gradientBlue as [ColorValue, ColorValue]}
-            style={{ borderRadius: 24, width: '100%', alignItems: 'center' as const, paddingVertical: 24 }}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}>
-            <Camera size={40} color="#FFFFFF" />
-            <Text style={{ fontSize: 22, fontWeight: '700', color: '#FFF', marginTop: 8 }}>Scan Your Food</Text>
-            <Text style={{ fontSize: 15, color: '#FFF', opacity: 0.85, marginTop: 2 }}>Detect allergens instantly</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+        {/* Hero Scan Button */}
+        <View style={styles.heroSection}>
+          <TouchableOpacity
+            style={styles.scanButtonWrapper}
+            onPress={() => router.push('/scan')}
+            activeOpacity={0.9}
+          >
+            <LinearGradient
+              colors={Colors.gradient}
+              style={styles.scanButton}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <View style={styles.scanIconContainer}>
+                <Camera size={32} color="#FFF" />
+              </View>
+              <View style={styles.scanTextContainer}>
+                <Text style={styles.scanTitle}>Scan Food</Text>
+                <Text style={styles.scanSubtitle}>Instant Analysis</Text>
+              </View>
+              <View style={styles.scanArrow}>
+                <ChevronRight size={24} color="#FFF" />
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
 
-        <View style={styles.statsContainer}>
-          <Text style={GlobalStyles.sectionTitle}>Your Safety Stats</Text>
+        {/* Stats Grid */}
+        <View style={styles.sectionContainer}>
+          <Text style={GlobalStyles.sectionTitle}>Daily Overview</Text>
           <View style={styles.statsGrid}>
             {quickStats.map((stat, index) => {
               const IconComponent = stat.icon;
               return (
-                <View key={index} style={[GlobalStyles.card, { width: (width - 60) / 2, alignItems: 'center' as const, backgroundColor: Colors.card, shadowColor: stat.color + '55' }]}>
-                  <View style={[GlobalStyles.iconCircle, { backgroundColor: stat.color + '22', alignItems: 'center' as const }]}>
-                    <IconComponent size={28} color={stat.color} />
+                <GlassmorphismCard
+                  key={index}
+                  style={styles.statCard}
+                  intensity={60}
+                  hasGradientBorder={false}
+                >
+                  <View style={[styles.iconCircle, { backgroundColor: stat.bg }]}>
+                    <IconComponent size={24} color={stat.color} />
                   </View>
-                  <Text style={{ fontSize: 26, fontWeight: '700', color: Colors.text }}>{stat.value}</Text>
-                  <Text style={{ fontSize: 13, color: Colors.textSecondary, textAlign: 'center' as const }}>{stat.label}</Text>
-                </View>
+                  <Text style={styles.statValue}>{stat.value}</Text>
+                  <Text style={styles.statLabel}>{stat.label}</Text>
+                </GlassmorphismCard>
               );
             })}
           </View>
         </View>
 
-        <View style={styles.recentSection}>
-          <Text style={GlobalStyles.sectionTitle}>Recent Scans</Text>
+        {/* Premium Insights Section */}
+        <View style={styles.sectionContainer}>
+          <View style={styles.sectionHeader}>
+            <Text style={GlobalStyles.sectionTitle}>Nutrient Insights</Text>
+            {!isPremium && (
+              <View style={styles.premiumBadge}>
+                <Zap size={12} color="#FFF" fill="#FFF" />
+                <Text style={styles.premiumBadgeText}>PREMIUM</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.chartContainer}>
+            <NutrientChart data={nutrientData} />
+            {!isPremium && (
+              <BlurView intensity={20} style={styles.lockOverlay}>
+                <GlassmorphismCard style={styles.lockCard} intensity={90} hasGradientBorder>
+                  <Lock size={32} color={Colors.warning} />
+                  <Text style={styles.lockTitle}>Unlock Insights</Text>
+                  <Text style={styles.lockSubtitle}>
+                    Get detailed breakdown of your nutrient intake.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.unlockButton}
+                    onPress={() => router.push('/subscription')}
+                  >
+                    <Text style={styles.unlockButtonText}>Go Premium</Text>
+                  </TouchableOpacity>
+                </GlassmorphismCard>
+              </BlurView>
+            )}
+          </View>
+        </View>
+
+        {/* Recent Scans */}
+        <View style={styles.sectionContainer}>
+          <Text style={GlobalStyles.sectionTitle}>Recent History</Text>
           {recentScans.length > 0 ? (
             recentScans.map((scan, index) => (
-              <View key={index} style={[GlobalStyles.card, { flexDirection: 'row', alignItems: 'center' as const, justifyContent: 'space-between' as const, backgroundColor: Colors.card, shadowColor: (scan.status === 'safe' ? Colors.safe : Colors.warning) + '33' }]}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: Colors.text, marginBottom: 2 }}>{scan.name}</Text>
-                  <Text style={{ fontSize: 12, color: Colors.textTertiary, marginBottom: 4 }}>{scan.time}</Text>
-                  {scan.allergens && (
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                      {scan.allergens.map((allergen: string, i: number) => (
-                        <View key={i} style={{ backgroundColor: Colors.danger + '22', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, marginRight: 6, marginBottom: 2 }}>
-                          <Text style={{ fontSize: 10, color: Colors.danger, fontWeight: '700' }}>{allergen}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
+              <GlassmorphismCard key={index} style={styles.historyCard} intensity={40}>
+                <View style={styles.historyRow}>
+                  <View style={styles.historyInfo}>
+                    <Text style={styles.historyName}>{scan.name}</Text>
+                    <Text style={styles.historyTime}>{scan.time}</Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      { backgroundColor: scan.status === 'safe' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(249, 115, 22, 0.1)' },
+                    ]}
+                  >
+                    {scan.status === 'safe' ? (
+                      <CheckCircle size={20} color={Colors.safe} />
+                    ) : (
+                      <AlertTriangle size={20} color={Colors.warning} />
+                    )}
+                  </View>
                 </View>
-                <View style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center' as const, justifyContent: 'center' as const, backgroundColor: (scan.status === 'safe' ? Colors.safe : Colors.warning) }}>
-                  {scan.status === 'safe' ? (
-                    <CheckCircle size={18} color="#FFFFFF" />
-                  ) : (
-                    <AlertTriangle size={18} color="#FFFFFF" />
-                  )}
-                </View>
-              </View>
+              </GlassmorphismCard>
             ))
           ) : (
-            <View style={[GlobalStyles.card, { alignItems: 'center' as const, backgroundColor: Colors.card }]}>
-              <Image source={require('../../assets/images/icon.png')} style={{ width: 40, height: 40, marginBottom: 8, opacity: 0.7 }} />
-              <Text style={{ fontSize: 16, fontWeight: '700', color: Colors.textSecondary, marginBottom: 2 }}>No scans yet</Text>
-              <Text style={{ fontSize: 13, color: Colors.textTertiary, textAlign: 'center' as const }}>Start scanning foods to see your recent activity</Text>
-            </View>
+            <GlassmorphismCard style={styles.emptyState} intensity={40}>
+              <Text style={styles.emptyText}>No scans yet</Text>
+              <Text style={styles.emptySubtext}>Start scanning to track your history</Text>
+            </GlassmorphismCard>
           )}
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -191,175 +311,223 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
-  header: {
+  headerContainer: {
     paddingTop: 60,
+    paddingBottom: 20,
     paddingHorizontal: 20,
-    paddingBottom: 30,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    overflow: 'hidden',
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    backgroundColor: '#FFF',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+  },
+  headerBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   headerContent: {
-    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   greeting: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
+    fontSize: 28,
+    fontWeight: '800',
+    color: Colors.text,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
-    color: '#FFFFFF',
-    opacity: 0.9,
-  },
-  content: {
-    padding: 20,
-  },
-  scanButton: {
-    marginTop: -20,
-    marginBottom: 30,
-    borderRadius: 20,
-    overflow: 'hidden',
-    elevation: 8,
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  scanButtonGradient: {
-    paddingVertical: 24,
-    paddingHorizontal: 32,
-    alignItems: 'center',
-  },
-  scanButtonText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginTop: 8,
-  },
-  scanButtonSubtext: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    opacity: 0.8,
+    color: Colors.textSecondary,
     marginTop: 4,
   },
-  statsContainer: {
-    marginBottom: 30,
+  heroSection: {
+    padding: 20,
+    marginTop: -10,
   },
-  sectionTitle: {
+  scanButtonWrapper: {
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 10,
+    borderRadius: 24,
+  },
+  scanButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    borderRadius: 24,
+  },
+  scanIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scanTextContainer: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  scanTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 16,
+    color: '#FFF',
+  },
+  scanSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+  },
+  scanArrow: {
+    opacity: 0.8,
+  },
+  sectionContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
   },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    gap: 12,
   },
   statCard: {
-    width: (width - 60) / 2,
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    width: (width - 52) / 2,
+    marginBottom: 0,
   },
-  statIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
   },
   statValue: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: Colors.text,
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    textAlign: 'center',
+    fontSize: 13,
+    color: Colors.textSecondary,
   },
-  recentSection: {
-    marginBottom: 20,
-  },
-  scanItem: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+  sectionHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 1,
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
-  scanInfo: {
-    flex: 1,
-  },
-  scanName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 4,
-  },
-  scanTime: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 8,
-  },
-  allergenTags: {
+  premiumBadge: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  allergenTag: {
-    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    backgroundColor: Colors.warning,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
-    marginRight: 8,
+    borderRadius: 12,
+    gap: 4,
+  },
+  premiumBadgeText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  chartContainer: {
+    position: 'relative',
+    borderRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: '#FFF',
+    padding: 16,
+  },
+  lockOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  lockCard: {
+    width: '80%',
+    alignItems: 'center',
+    padding: 24,
+  },
+  lockTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.text,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  lockSubtitle: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  unlockButton: {
+    backgroundColor: Colors.text,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+  },
+  unlockButtonText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  historyCard: {
+    marginBottom: 12,
+  },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  historyInfo: {
+    flex: 1,
+  },
+  historyName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text,
     marginBottom: 4,
   },
-  allergenText: {
-    fontSize: 10,
-    color: '#DC2626',
-    fontWeight: '600',
+  historyTime: {
+    fontSize: 12,
+    color: Colors.textTertiary,
   },
   statusBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptyState: {
-    backgroundColor: '#FFFFFF',
-    padding: 24,
-    borderRadius: 12,
     alignItems: 'center',
-    marginBottom: 12,
+    padding: 24,
   },
   emptyText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#6B7280',
+    color: Colors.textSecondary,
     marginBottom: 4,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#9CA3AF',
-    textAlign: 'center',
+    color: Colors.textTertiary,
   },
 });

@@ -1,7 +1,32 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert, TextInput, Modal } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Switch,
+  Alert,
+  TextInput,
+  Modal,
+} from 'react-native';
 import { useState, useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { User, Shield, Bell, Settings, CircleHelp as HelpCircle, ChevronRight, CreditCard as Edit, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Heart, Database, LogOut, Pencil, Trash2 } from 'lucide-react-native';
+import {
+  User,
+  Shield,
+  Bell,
+  Settings,
+  CircleHelp as HelpCircle,
+  ChevronRight,
+  CreditCard as Edit,
+  TriangleAlert as AlertTriangle,
+  CircleCheck as CheckCircle,
+  Heart,
+  Database,
+  LogOut,
+  Pencil,
+  Trash2,
+} from 'lucide-react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { UserService } from '../../services/userService';
 import { NotificationService } from '../../services/notificationService';
@@ -14,7 +39,6 @@ export default function ProfileScreen() {
   const { user, userData, signOutUser, refreshUserData } = useAuth();
   const [notifications, setNotifications] = useState(true);
   const [autoScan, setAutoScan] = useState(false);
-  const [hapticFeedback, setHapticFeedback] = useState(true);
   const [userAllergens, setUserAllergens] = useState<any[]>([]);
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState('');
@@ -22,7 +46,9 @@ export default function ProfileScreen() {
   const [addAllergenModal, setAddAllergenModal] = useState(false);
   const [newAllergen, setNewAllergen] = useState('');
   const [manageAllergensModal, setManageAllergensModal] = useState(false);
-  const [editingAllergenIndex, setEditingAllergenIndex] = useState<number | null>(null);
+  const [editingAllergenIndex, setEditingAllergenIndex] = useState<
+    number | null
+  >(null);
   const [editingAllergenName, setEditingAllergenName] = useState('');
 
   useEffect(() => {
@@ -34,38 +60,36 @@ export default function ProfileScreen() {
   // Load user's allergens when userData changes
   useEffect(() => {
     if (userData?.allergens) {
-      setUserAllergens(userData.allergens.map((allergen: string) => ({
-        name: allergen,
-        severity: 'high',
-        color: '#DC2626'
-      })));
+      setUserAllergens(
+        userData.allergens.map((allergen: string) => ({
+          name: allergen,
+          severity: 'high',
+          color: '#DC2626',
+        }))
+      );
     }
   }, [userData]);
 
   const handleSignOut = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Sign Out', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              await signOutUser();
-              // Redirect to auth screen for smooth transition
-              router.replace('/auth');
-            } catch (error) {
-              console.error('Sign out error:', error);
-              Alert.alert('Error', 'Failed to sign out. Please try again.');
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            }
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            await signOutUser();
+            // Redirect to auth screen for smooth transition
+            router.replace('/auth');
+          } catch (error) {
+            console.error('Sign out error:', error);
+            Alert.alert('Error', 'Failed to sign out. Please try again.');
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           }
-        }
-      ]
-    );
+        },
+      },
+    ]);
   };
 
   const handleNotificationToggle = async (value: boolean) => {
@@ -73,7 +97,9 @@ export default function ProfileScreen() {
     Haptics.selectionAsync();
     try {
       if (user?.uid) {
-        await UserService.updateUserSettings(user.uid, { notifications: value });
+        await UserService.updateUserSettings(user.uid, {
+          notifications: value,
+        });
         // Schedule or cancel daily notifications based on toggle
         await NotificationService.toggleNotifications(value);
       }
@@ -94,49 +120,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleHapticToggle = async (value: boolean) => {
-    setHapticFeedback(value);
-    Haptics.selectionAsync();
-    try {
-      if (user?.uid) {
-        await UserService.updateUserSettings(user.uid, { hapticFeedback: value });
-      }
-    } catch (error) {
-      console.error('Error updating haptic feedback settings:', error);
-    }
-  };
-
-  const handleResetOnboarding = () => {
-    Alert.alert(
-      'Reset Onboarding',
-      'This will show you the onboarding screens again. Are you sure?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Reset', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              if (user?.uid) {
-                await UserService.updateUserData(user.uid, { 
-                  onboardingCompleted: false,
-                  onboardingCompletedAt: null
-                });
-                await refreshUserData();
-                router.replace('/welcome');
-              }
-            } catch (error) {
-              console.error('Error resetting onboarding:', error);
-              Alert.alert('Error', 'Failed to reset onboarding. Please try again.');
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            }
-          }
-        }
-      ]
-    );
-  };
-
   const addAllergen = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setNewAllergen('');
@@ -146,9 +129,15 @@ export default function ProfileScreen() {
   const saveAllergen = async () => {
     if (!newAllergen.trim() || !user?.uid) return;
     try {
-      const newAllergens = [...userAllergens, { name: newAllergen.trim(), severity: 'high', color: '#DC2626' }];
+      const newAllergens = [
+        ...userAllergens,
+        { name: newAllergen.trim(), severity: 'high', color: '#DC2626' },
+      ];
       setUserAllergens(newAllergens);
-      await UserService.updateUserAllergens(user.uid, newAllergens.map(a => a.name));
+      await UserService.updateUserAllergens(
+        user.uid,
+        newAllergens.map((a) => a.name)
+      );
       setAddAllergenModal(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
@@ -166,7 +155,10 @@ export default function ProfileScreen() {
   const saveName = async () => {
     if (!newName.trim() || !user?.uid) return;
     try {
-      await UserService.updateUserData(user.uid, { name: newName.trim(), avatar: selectedAvatar });
+      await UserService.updateUserData(user.uid, {
+        name: newName.trim(),
+        avatar: selectedAvatar,
+      });
       await refreshUserData(); // Refresh user data from context
       setEditingName(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -188,13 +180,24 @@ export default function ProfileScreen() {
   };
 
   const saveEditAllergen = async () => {
-    if (editingAllergenIndex === null || !editingAllergenName.trim() || !user?.uid) return;
+    if (
+      editingAllergenIndex === null ||
+      !editingAllergenName.trim() ||
+      !user?.uid
+    )
+      return;
     const updated = [...userAllergens];
-    updated[editingAllergenIndex] = { ...updated[editingAllergenIndex], name: editingAllergenName.trim() };
+    updated[editingAllergenIndex] = {
+      ...updated[editingAllergenIndex],
+      name: editingAllergenName.trim(),
+    };
     setUserAllergens(updated);
     setEditingAllergenIndex(null);
     setEditingAllergenName('');
-    await UserService.updateUserAllergens(user.uid, updated.map(a => a.name));
+    await UserService.updateUserAllergens(
+      user.uid,
+      updated.map((a) => a.name)
+    );
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
@@ -202,27 +205,38 @@ export default function ProfileScreen() {
     if (!user?.uid) return;
     const updated = userAllergens.filter((_, i) => i !== index);
     setUserAllergens(updated);
-    await UserService.updateUserAllergens(user.uid, updated.map(a => a.name));
+    await UserService.updateUserAllergens(
+      user.uid,
+      updated.map((a) => a.name)
+    );
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  const handleTestNotification = async () => {
-    try {
-      await NotificationService.sendTestNotification();
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Test Notification', 'A test notification will appear in 2 seconds!');
-    } catch (error) {
-      console.error('Error sending test notification:', error);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', 'Failed to send test notification');
-    }
-  };
-
   const stats = [
-    { label: 'Foods Scanned', value: userData?.foodsScanned?.toString() || '0', icon: Database, color: '#3B82F6' },
-    { label: 'Safe Foods', value: userData?.safeFoods?.toString() || '0', icon: CheckCircle, color: '#059669' },
-    { label: 'Allergens Avoided', value: userData?.allergensFound?.toString() || '0', icon: Shield, color: '#DC2626' },
-    { label: 'Days Safe', value: userData?.daysSafe?.toString() || '0', icon: Heart, color: '#EC4899' },
+    {
+      label: 'Foods Scanned',
+      value: userData?.foodsScanned?.toString() || '0',
+      icon: Database,
+      color: '#3B82F6',
+    },
+    {
+      label: 'Safe Foods',
+      value: userData?.safeFoods?.toString() || '0',
+      icon: CheckCircle,
+      color: '#059669',
+    },
+    {
+      label: 'Allergens Avoided',
+      value: userData?.allergensFound?.toString() || '0',
+      icon: Shield,
+      color: '#DC2626',
+    },
+    {
+      label: 'Days Safe',
+      value: userData?.daysSafe?.toString() || '0',
+      icon: Heart,
+      color: '#EC4899',
+    },
   ];
 
   const settingsItems = [
@@ -234,25 +248,12 @@ export default function ProfileScreen() {
       onPress: openManageAllergens,
     },
     {
-      title: 'Test Notifications',
-      subtitle: 'Send a test notification',
-      icon: Bell,
-      color: '#10B981',
-      onPress: handleTestNotification,
-    },
-    {
       title: 'Help & Support',
       subtitle: 'Get help using the app',
       icon: HelpCircle,
       color: '#3B82F6',
-      onPress: () => Alert.alert('Support', 'Contact us at shkshreyaskumar@gmail.com'),
-    },
-    {
-      title: 'Reset Onboarding',
-      subtitle: 'Show onboarding screens again',
-      icon: Settings,
-      color: '#9CA3AF',
-      onPress: handleResetOnboarding,
+      onPress: () =>
+        Alert.alert('Support', 'Contact us at shkshreyaskumar@gmail.com'),
     },
   ];
 
@@ -262,42 +263,96 @@ export default function ProfileScreen() {
         colors={['#10B981', '#059669']}
         style={styles.header}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}>
+        end={{ x: 1, y: 1 }}
+      >
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
             <Text style={{ fontSize: 32 }}>{userData?.avatar || '😀'}</Text>
           </View>
           <Text style={styles.userName}>
-            {userData?.name ? userData.name : userData ? 'Set your name' : 'Loading...'}
+            {userData?.name
+              ? userData.name
+              : userData
+              ? 'Set your name'
+              : 'Loading...'}
           </Text>
-          <Text style={styles.userEmail}>{user?.email || 'user@email.com'}</Text>
-          <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
+          <Text style={styles.userEmail}>
+            {user?.email || 'user@email.com'}
+          </Text>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={handleEditProfile}
+          >
             <Edit size={16} color="#FFFFFF" />
             <Text style={styles.editButtonText}>Edit Profile</Text>
           </TouchableOpacity>
         </View>
       </LinearGradient>
       {editingName && (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#0008', justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>
-          <View style={{ backgroundColor: '#FFF', borderRadius: 16, padding: 24, width: '90%' }}>
-            <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 12 }}>Edit Profile</Text>
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: '#0008',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 10,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: '#FFF',
+              borderRadius: 16,
+              padding: 24,
+              width: '90%',
+            }}
+          >
+            <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 12 }}>
+              Edit Profile
+            </Text>
             <TextInput
               value={newName}
               onChangeText={setNewName}
               placeholder="Enter your name"
-              style={{ borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, padding: 10, marginBottom: 16, fontSize: 16 }}
+              style={{
+                borderWidth: 1,
+                borderColor: '#E5E7EB',
+                borderRadius: 8,
+                padding: 10,
+                marginBottom: 16,
+                fontSize: 16,
+              }}
             />
-            <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 8 }}>Choose Avatar</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginBottom: 16 }}>
+            <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 8 }}>
+              Choose Avatar
+            </Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                marginBottom: 16,
+              }}
+            >
               {avatarOptions.map((avatar, idx) => (
                 <TouchableOpacity
                   key={idx}
                   onPress={() => setSelectedAvatar(avatar)}
                   style={{
-                    width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', margin: 4,
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: 4,
                     borderWidth: selectedAvatar === avatar ? 2 : 0,
-                    borderColor: selectedAvatar === avatar ? '#10B981' : 'transparent',
-                    backgroundColor: selectedAvatar === avatar ? '#ECFDF5' : '#F3F4F6',
+                    borderColor:
+                      selectedAvatar === avatar ? '#10B981' : 'transparent',
+                    backgroundColor:
+                      selectedAvatar === avatar ? '#ECFDF5' : '#F3F4F6',
                   }}
                 >
                   <Text style={{ fontSize: 28 }}>{avatar}</Text>
@@ -305,11 +360,21 @@ export default function ProfileScreen() {
               ))}
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-              <TouchableOpacity onPress={() => { setEditingName(false); Haptics.selectionAsync(); }} style={{ marginRight: 16 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setEditingName(false);
+                  Haptics.selectionAsync();
+                }}
+                style={{ marginRight: 16 }}
+              >
                 <Text style={{ color: '#6B7280', fontSize: 16 }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={saveName}>
-                <Text style={{ color: '#10B981', fontWeight: '700', fontSize: 16 }}>Save</Text>
+                <Text
+                  style={{ color: '#10B981', fontWeight: '700', fontSize: 16 }}
+                >
+                  Save
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -317,21 +382,54 @@ export default function ProfileScreen() {
       )}
 
       <Modal visible={addAllergenModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: '#0008', justifyContent: 'center', alignItems: 'center' }}>
-          <View style={{ backgroundColor: '#FFF', borderRadius: 16, padding: 24, width: '80%' }}>
-            <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 12 }}>Add Allergen</Text>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: '#0008',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: '#FFF',
+              borderRadius: 16,
+              padding: 24,
+              width: '80%',
+            }}
+          >
+            <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 12 }}>
+              Add Allergen
+            </Text>
             <TextInput
               value={newAllergen}
               onChangeText={setNewAllergen}
               placeholder="Enter allergen name"
-              style={{ borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, padding: 10, marginBottom: 16, fontSize: 16 }}
+              style={{
+                borderWidth: 1,
+                borderColor: '#E5E7EB',
+                borderRadius: 8,
+                padding: 10,
+                marginBottom: 16,
+                fontSize: 16,
+              }}
             />
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-              <TouchableOpacity onPress={() => { setAddAllergenModal(false); Haptics.selectionAsync(); }} style={{ marginRight: 16 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setAddAllergenModal(false);
+                  Haptics.selectionAsync();
+                }}
+                style={{ marginRight: 16 }}
+              >
                 <Text style={{ color: '#6B7280', fontSize: 16 }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={saveAllergen}>
-                <Text style={{ color: '#10B981', fontWeight: '700', fontSize: 16 }}>Save</Text>
+                <Text
+                  style={{ color: '#10B981', fontWeight: '700', fontSize: 16 }}
+                >
+                  Save
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -339,31 +437,81 @@ export default function ProfileScreen() {
       </Modal>
 
       <Modal visible={manageAllergensModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: '#0008', justifyContent: 'center', alignItems: 'center' }}>
-          <View style={{ backgroundColor: '#FFF', borderRadius: 16, padding: 24, width: '90%', maxHeight: '80%' }}>
-            <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 12 }}>Manage Allergens</Text>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: '#0008',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: '#FFF',
+              borderRadius: 16,
+              padding: 24,
+              width: '90%',
+              maxHeight: '80%',
+            }}
+          >
+            <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 12 }}>
+              Manage Allergens
+            </Text>
             <ScrollView style={{ maxHeight: 300 }}>
               {userAllergens.length === 0 && (
-                <Text style={{ color: Colors.textTertiary, textAlign: 'center', marginVertical: 16 }}>No allergens added yet.</Text>
+                <Text
+                  style={{
+                    color: Colors.textTertiary,
+                    textAlign: 'center',
+                    marginVertical: 16,
+                  }}
+                >
+                  No allergens added yet.
+                </Text>
               )}
               {userAllergens.map((allergen, idx) => (
-                <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                <View
+                  key={idx}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginBottom: 10,
+                  }}
+                >
                   {editingAllergenIndex === idx ? (
                     <TextInput
                       value={editingAllergenName}
                       onChangeText={setEditingAllergenName}
-                      style={{ flex: 1, borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, padding: 8, fontSize: 15, marginRight: 8 }}
+                      style={{
+                        flex: 1,
+                        borderWidth: 1,
+                        borderColor: '#E5E7EB',
+                        borderRadius: 8,
+                        padding: 8,
+                        fontSize: 15,
+                        marginRight: 8,
+                      }}
                       autoFocus
                     />
                   ) : (
-                    <Text style={{ flex: 1, fontSize: 15 }}>{allergen.name}</Text>
+                    <Text style={{ flex: 1, fontSize: 15 }}>
+                      {allergen.name}
+                    </Text>
                   )}
                   {editingAllergenIndex === idx ? (
-                    <TouchableOpacity onPress={saveEditAllergen} style={{ marginRight: 8 }}>
-                      <Text style={{ color: '#10B981', fontWeight: '700' }}>Save</Text>
+                    <TouchableOpacity
+                      onPress={saveEditAllergen}
+                      style={{ marginRight: 8 }}
+                    >
+                      <Text style={{ color: '#10B981', fontWeight: '700' }}>
+                        Save
+                      </Text>
                     </TouchableOpacity>
                   ) : (
-                    <TouchableOpacity onPress={() => startEditAllergen(idx, allergen.name)} style={{ marginRight: 8 }}>
+                    <TouchableOpacity
+                      onPress={() => startEditAllergen(idx, allergen.name)}
+                      style={{ marginRight: 8 }}
+                    >
                       <Pencil size={18} color={Colors.info} />
                     </TouchableOpacity>
                   )}
@@ -373,8 +521,19 @@ export default function ProfileScreen() {
                 </View>
               ))}
             </ScrollView>
-            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 }}>
-              <TouchableOpacity onPress={() => { setManageAllergensModal(false); Haptics.selectionAsync(); }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'flex-end',
+                marginTop: 12,
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => {
+                  setManageAllergensModal(false);
+                  Haptics.selectionAsync();
+                }}
+              >
                 <Text style={{ color: '#6B7280', fontSize: 16 }}>Close</Text>
               </TouchableOpacity>
             </View>
@@ -390,7 +549,12 @@ export default function ProfileScreen() {
               const IconComponent = stat.icon;
               return (
                 <View key={index} style={styles.statCard}>
-                  <View style={[styles.statIcon, { backgroundColor: `${stat.color}15` }]}>
+                  <View
+                    style={[
+                      styles.statIcon,
+                      { backgroundColor: `${stat.color}15` },
+                    ]}
+                  >
                     <IconComponent size={20} color={stat.color} />
                   </View>
                   <Text style={styles.statValue}>{stat.value}</Text>
@@ -406,30 +570,45 @@ export default function ProfileScreen() {
           {userAllergens.map((allergen, index) => (
             <View key={index} style={styles.allergenItem}>
               <View style={styles.allergenInfo}>
-                <View style={[styles.allergenDot, { backgroundColor: allergen.color }]} />
+                <View
+                  style={[
+                    styles.allergenDot,
+                    { backgroundColor: allergen.color },
+                  ]}
+                />
                 <Text style={styles.allergenName}>{allergen.name}</Text>
               </View>
-              <View style={[styles.severityBadge, { backgroundColor: `${allergen.color}15` }]}>
+              <View
+                style={[
+                  styles.severityBadge,
+                  { backgroundColor: `${allergen.color}15` },
+                ]}
+              >
                 <Text style={[styles.severityText, { color: allergen.color }]}>
                   {allergen.severity}
                 </Text>
               </View>
             </View>
           ))}
-          <TouchableOpacity style={styles.addAllergenButton} onPress={addAllergen}>
+          <TouchableOpacity
+            style={styles.addAllergenButton}
+            onPress={addAllergen}
+          >
             <Text style={styles.addAllergenText}>+ Add Allergen</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.settingsSection}>
           <Text style={styles.sectionTitle}>App Settings</Text>
-          
+
           <View style={styles.settingItem}>
             <View style={styles.settingInfo}>
               <Bell size={20} color="#6B7280" />
               <View style={styles.settingText}>
                 <Text style={styles.settingTitle}>Notifications</Text>
-                <Text style={styles.settingSubtitle}>Get alerts about allergens</Text>
+                <Text style={styles.settingSubtitle}>
+                  Get alerts about allergens
+                </Text>
               </View>
             </View>
             <Switch
@@ -445,7 +624,9 @@ export default function ProfileScreen() {
               <Shield size={20} color="#6B7280" />
               <View style={styles.settingText}>
                 <Text style={styles.settingTitle}>Auto-scan Mode</Text>
-                <Text style={styles.settingSubtitle}>Automatically analyze images</Text>
+                <Text style={styles.settingSubtitle}>
+                  Automatically analyze images
+                </Text>
               </View>
             </View>
             <Switch
@@ -455,42 +636,24 @@ export default function ProfileScreen() {
               thumbColor={autoScan ? '#FFFFFF' : '#F3F4F6'}
             />
           </View>
-
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Heart size={20} color="#6B7280" />
-              <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Haptic Feedback</Text>
-                <Text style={styles.settingSubtitle}>Feel vibrations for alerts</Text>
-              </View>
-            </View>
-            <Switch
-              value={hapticFeedback}
-              onValueChange={handleHapticToggle}
-              trackColor={{ false: '#E5E7EB', true: '#10B981' }}
-              thumbColor={hapticFeedback ? '#FFFFFF' : '#F3F4F6'}
-            />
-          </View>
-
-          <TouchableOpacity style={styles.settingItem} onPress={handleResetOnboarding}>
-            <View style={styles.settingInfo}>
-              <Settings size={20} color="#6B7280" />
-              <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Reset Onboarding</Text>
-                <Text style={styles.settingSubtitle}>Show onboarding screens again</Text>
-              </View>
-            </View>
-            <ChevronRight size={20} color="#9CA3AF" />
-          </TouchableOpacity>
         </View>
 
         <View style={styles.menuSection}>
           {settingsItems.map((item, index) => {
             const IconComponent = item.icon;
             return (
-              <TouchableOpacity key={index} style={styles.menuItem} onPress={item.onPress}>
+              <TouchableOpacity
+                key={index}
+                style={styles.menuItem}
+                onPress={item.onPress}
+              >
                 <View style={styles.menuLeft}>
-                  <View style={[styles.menuIcon, { backgroundColor: `${item.color}15` }]}>
+                  <View
+                    style={[
+                      styles.menuIcon,
+                      { backgroundColor: `${item.color}15` },
+                    ]}
+                  >
                     <IconComponent size={20} color={item.color} />
                   </View>
                   <View style={styles.menuText}>
@@ -505,14 +668,21 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.menuSection}>
-          <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+          <TouchableOpacity
+            style={styles.signOutButton}
+            onPress={handleSignOut}
+          >
             <View style={styles.menuLeft}>
               <View style={[styles.menuIcon, { backgroundColor: '#DC262615' }]}>
                 <LogOut size={20} color="#DC2626" />
               </View>
               <View style={styles.menuText}>
-                <Text style={[styles.menuTitle, { color: '#DC2626' }]}>Sign Out</Text>
-                <Text style={styles.menuSubtitle}>Sign out of your account</Text>
+                <Text style={[styles.menuTitle, { color: '#DC2626' }]}>
+                  Sign Out
+                </Text>
+                <Text style={styles.menuSubtitle}>
+                  Sign out of your account
+                </Text>
               </View>
             </View>
             <ChevronRight size={20} color="#DC2626" />
